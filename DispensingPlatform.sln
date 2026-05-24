@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{63C5A902-75A0-43CD-98CB-30CC5463BB8F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shell", "Shell", "{130E23E2-40DD-4F25-AA13-E63400CF3DF9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DispensingPlatform.Shell", "src\Shell\DispensingPlatform.Shell\DispensingPlatform.Shell.csproj", "{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{130E23E2-40DD-4F25-AA13-E63400CF3DF9} = {63C5A902-75A0-43CD-98CB-30CC5463BB8F}
+		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC} = {130E23E2-40DD-4F25-AA13-E63400CF3DF9}
+	EndGlobalSection
+EndGlobal

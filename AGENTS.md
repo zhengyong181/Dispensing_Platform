@@ -1,0 +1,86 @@
+# 全局 AGENTS.md — 架构边界与协作规则
+
+本文件是所有目录级 `AGENTS.md` 的上位规则。子目录规则可以补充更具体的约束，但不能放宽这里的边界。
+
+## 项目身份
+
+本项目是面向工业超精密点胶设备的桌面控制平台，目标是在同一套主线代码中支持多客户、多机型、多硬件供应商和可扩展工艺能力。
+
+核心原则：
+
+- **硬件、工艺、UI 解耦**：硬件通过 HAL 抽象，工艺通过 IR / Process 表达，UI 通过 Shell / Modules 组织。
+- **接口先行**：跨层协作优先定义契约，再实现具体能力。
+- **仿真先于真机**：关键流程必须能在仿真器中验证，真机差异收敛在 HAL 实现或执行适配层。
+- **可观测优先**：状态、报警、日志、Trace、审计和派生产物 hash 必须能支撑问题定位。
+- **最小骨架 + 按需项目化**：当前只创建真正需要开发的项目；其它层先作为目录和命名空间存在。
+- **Prism 只用于 UI 组织**：不使用 Prism 作为业务事件总线或跨层契约。
+
+## 强制架构边界
+
+- Prism 只能出现在 `Shell`、`Modules`、`DesignSystem` 的 UI 适配代码中。
+- `Core`、`Application`、`Process`、`HAL`、`Drafting` 的 public API 和实现代码不得引用 Prism。
+- `Drafting`、`Process.Compiler`、`Process.Simulation`、`Process.Emitter` 不直接依赖 HAL 或具体硬件 SDK。
+- 只有执行适配层、Service / Device 实现层可以接触 HAL 契约；具体 SDK 必须藏在 HAL 实现内部。
+- HAL 厂商实现之间不得互相依赖。
+- UI 命令型操作必须进入 `Application`，不能由 UI 直接调用 HAL、PLC、IO 或运动控制。
+- 只读查询、状态订阅和展示数据可以通过 Service / Query facade 或项目自有事件总线获得。
+- 跨模块事件使用项目自有 `IEventBus` / TraceHub 等抽象，不使用 Prism `EventAggregator` 作为业务总线。
+- `Contracts`、HAL 接口、IR schema、配置 schema、数据库 schema 的变更必须同步对应文档；重大变更需要 ADR。
+- 不要为了“预留”而提前创建空项目；创建新 `.csproj` 前先确认文档 2 的按需项目化规则。
+
+## 允许依赖方向
+
+依赖只能从外层指向内层或指向稳定契约，不能反向穿透：
+
+- `Shell`：可以引用 UI 组织所需的 `Modules`、`DesignSystem`、`Application` 门面和 `Core` 契约。
+- `Modules`：可以引用 `DesignSystem`、`Application` 门面和 `Core` 契约；不得直接引用其它 Module。
+- `DesignSystem`：只能承载 UI 资源、主题、Token 和通用控件；不得引用业务层。
+- `Application`：编排状态机、调度、资源仲裁和用例；通过接口使用 Process、Core、Service / Device 抽象。
+- `Drafting`：可以使用 Core 契约和 Process / IR 语义；不得依赖 HAL。
+- `Process`：IR、编译、仿真、规划、发码保持硬件无关；只有 DirectExecutor / 执行适配可以接触 HAL 契约。
+- `HAL`：实现硬件抽象；可以依赖 HAL 契约和 Core 基础契约，不得依赖 UI、Application 或其它 HAL 实现。
+- `Core`：提供稳定契约、基础类型、错误、事件、配置、日志等抽象；不得依赖 UI、硬件 SDK 或业务实现。
+- `configs`、`docs`、`tools`、`tests` 不形成运行时业务依赖。
+
+## 每个编码任务的必须工作流程
+
+编辑前：
+
+1. 识别目标层：确认任务属于 Shell、Modules、DesignSystem、Application、Core、HAL、Drafting、Process、configs、docs、tests 或 tools。
+2. 说明将修改哪些项目或目录；如果当前只是目录占位，不要擅自创建项目。
+3. 说明是否会影响任何 `Contracts`、HAL 接口、IR schema、配置 schema 或数据库 schema。
+4. 如果架构边界不清楚，停止并询问，不要靠猜测实现。
+
+编辑时：
+
+1. 尽可能做最小改动，避免无关重构。
+2. 不要创建新的跨层依赖。
+3. 优先使用接口，而不是具体实现。
+4. 保持 IO 异步且可取消，公开异步 IO API 必须接受 `CancellationToken`。
+5. 使用 UnitsNet 表示物理量，避免裸 `double` 表达距离、速度、压力、时间等工程量。
+6. 行为发生变化时，新增或更新测试。
+
+编辑后：
+
+1. 如果依赖关系发生变化，运行架构测试。
+2. 运行被修改项目的单元测试；如果测试项目尚未创建，说明原因。
+3. 总结变更文件。
+4. 明确说明是否触碰了架构边界。
+5. 明确说明是否需要 ADR。
+
+## 安全规则
+
+涉及运动、PLC、IO、报警、恢复和机器状态逻辑时，必须按安全优先处理：
+
+- 默认状态必须是安全状态；失败时优先停止、降级或进入受控恢复流程。
+- 运动命令必须有单位、限位、速度 / 加速度边界、超时、取消和日志。
+- PLC / IO 写入必须经过 Application 状态机、资源仲裁或明确的设备服务接口。
+- 报警不能只记录文本，必须保留等级、来源、时间、上下文和可恢复性。
+- 报警确认不能等同于故障消失，恢复流程必须验证真实设备状态。
+- 自动恢复不得绕过安全互锁、门禁、急停、轴使能、气压 / 胶压等前置条件。
+- 真机动作必须能被仿真路径覆盖；不能用真机作为唯一验证方式。
+- 不允许静默重试会改变设备状态的操作；重试策略必须有上限、日志和状态反馈。
+
+## 冲突处理
+
+如果用户请求与本文件或目录级 `AGENTS.md` 冲突，不要直接实现。必须先说明冲突点，再提出符合架构边界和安全规则的替代方案。
