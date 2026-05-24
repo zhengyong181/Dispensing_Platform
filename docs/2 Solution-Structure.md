@@ -1,10 +1,10 @@
 # 文档 2 — 解决方案与项目结构（Solution-Structure.md）
 
-> 版本：v0.3 · 最后更新：2026-05-24
+> 版本：v0.4 · 最后更新：2026-05-25
 
 本文是项目的工程地图。当前阶段采用**最小项目骨架 + 按需项目化**策略：只创建当前真正要开发的项目，其它层先保留空目录占位。后续开发到哪一层、哪一个子系统，再根据实际需要创建对应 `.csproj`。
 
-当前计划从 `Shell` 层开始，因此现阶段只需要 `DispensingPlatform.Shell` 是真实项目；`Core`、`Application`、`Hal`、`Drafting`、`Process`、`Modules`、`DesignSystem` 暂时只作为目录存在。
+当前计划从 `Shell` 层开始，同时已进入 Beckhoff 硬件接入阶段，因此现阶段存在两个真实项目：`DispensingPlatform.Shell` 与 `DispensingPlatform.Hal.Beckhoff`；其它层继续先以目录占位。
 
 ---
 
@@ -28,7 +28,9 @@ DispensingPlatform.sln
 │   ├─ Application/
 │   │   └─ README.md
 │   ├─ Hal/
-│   │   └─ README.md
+│   │   ├─ README.md
+│   │   └─ DispensingPlatform.Hal.Beckhoff/
+│   │       └─ DispensingPlatform.Hal.Beckhoff.csproj
 │   ├─ Drafting/
 │   │   └─ README.md
 │   ├─ Process/
@@ -39,7 +41,9 @@ DispensingPlatform.sln
 │       └─ README.md
 │
 ├─ tests/
-│   └─ README.md
+│   ├─ README.md
+│   └─ DispensingPlatform.Hal.Tests/
+│       └─ DispensingPlatform.Hal.Tests.csproj
 │
 ├─ configs/
 ├─ docs/
@@ -50,7 +54,7 @@ DispensingPlatform.sln
 说明：
 
 - 空目录用 `README.md` 占位，避免 Git 不跟踪。
-- 当前只创建 `Shell` 项目，因为现阶段准备从 Shell 层开始搭建。
+- 当前已创建 `Shell` 与 `Hal.Beckhoff` 两个项目：前者用于 UI 主壳，后者用于 Beckhoff 硬件抽象落地。
 - 其它层不提前创建 `.csproj`，避免一开始出现大量空项目和错误边界。
 - 后续新增项目前，先更新本文，再创建项目骨架。
 
@@ -154,7 +158,7 @@ src/Drafting/DispensingPlatform.Drafting/
 | `Drafting/Geometry` | `DispensingPlatform.Drafting.Geometry` | 几何算法需要独立复用或测试 |
 | `Process/Ir` | `DispensingPlatform.Process.Ir` | IR schema 稳定且需要强版本控制 |
 | `Hal/Simulator` | `DispensingPlatform.Hal.Simulator` | 仿真器成为测试基础设施 |
-| `Hal/Vendors/Beckhoff` | `DispensingPlatform.Hal.Motion.Beckhoff` | 接入 Beckhoff SDK 并需要独立部署 |
+| `Hal/Vendors/Beckhoff` | `DispensingPlatform.Hal.Beckhoff` | 接入 Beckhoff SDK 并需要独立部署 |
 | `Modules/Drafting` | `DispensingPlatform.Modules.Drafting` | UI 模块需要独立加载或客户裁剪 |
 
 拆分前必须先更新本文；如影响公共契约、部署方式或技术栈，需要补 ADR。
@@ -177,7 +181,7 @@ src/Drafting/DispensingPlatform.Drafting/
 
 ## 7. 测试项目策略
 
-当前可以只保留 `tests/README.md`。当某个层开始开发时，再创建对应测试项目：
+测试项目按需创建。当前已存在 `DispensingPlatform.Hal.Tests` 用于 HAL 行为验证；其它测试项目在对应层开始开发时再创建：
 
 ```text
 tests/

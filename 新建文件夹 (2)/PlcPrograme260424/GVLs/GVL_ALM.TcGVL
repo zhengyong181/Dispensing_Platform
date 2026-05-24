@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_ALM" Id="{57a11420-44dd-41b3-a2bc-395adf3830df}">
+    <Declaration><![CDATA[VAR_GLOBAL
+	//当前正在发生的警报数量
+	iActErrorNum					:             		INT																;
+	//历史发生的警报数量
+	iHistoryErrorNum				:           		INT																;
+	//报警信息数组，根据iErrorIDMax设定上限值。根据需求扩展。
+	arrstError						:					ARRAY [1..iErrorIDMax] OF ST_Error								;
+	//当前正在发生的报警存储数组，预设30组数据
+	arrstActError					:					ARRAY [1..30] OF ST_HistoryError								;
+	//清除历史报警信息数组触发变量
+	bClearHistoryError				:            		BOOL															;
+	//获取的当前系统时间，配合报警信息输出
+	tActSystemTime					: 					TIMESTRUCT														;
+	// 报警信息中英文选择，默认为中文
+	bLanguageSet					:					BOOL															;
+END_VAR
+VAR_GLOBAL PERSISTENT
+	//历史报警存储数组，预设200组数组
+	arrstHistoryError				:					ARRAY [1..200] OF ST_HistoryError								;			
+END_VAR
+VAR_GLOBAL CONSTANT
+	// 报警数组最大值，根据实际需求更改
+	iErrorIDMax: INT := 500;
+END_VAR
+VAR_GLOBAL
+	bGetSystemTimeDone: BOOL;
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

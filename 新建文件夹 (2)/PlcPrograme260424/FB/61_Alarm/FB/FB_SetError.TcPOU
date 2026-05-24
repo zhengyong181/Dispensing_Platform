@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_SetError" Id="{a78b7328-05dc-4a1f-ba67-390de9ee89e9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SetError
+VAR_INPUT
+	//是否启用当前报警
+    bEnable						:                   BOOL						;
+	//当前报警的报警代码号
+	iErrorID					:					INT							;
+	//当前报警的触发信号输入
+	bExecute						:					BOOL						;
+END_VAR
+VAR_INPUT
+	//报警复位信号输入
+	bReset						:					BOOL						;
+	// 报警信息-英文字符
+	strErrorInfoEN				: 					STRING						;
+	// 报警信息-中文字符
+	wstrErrorInfoCN				: 					WSTRING						;
+	//当前报警的等级设定
+	enumErrorClass				:					Enum_ErrorClass				;
+END_VAR
+VAR_INPUT
+	//报警发生时，需要触发的动作，1-4中任意选择。                           						
+	bAlarmAction1				:					BOOL						;
+	bAlarmAction2				:					BOOL						;
+	bAlarmAction3				:					BOOL						;
+	bAlarmAction4				:					BOOL						;
+	// 报警代码的对应轴名称，驱动器报警时可以调用
+	wstr1						: 					WSTRING						;
+	// 报警代码，NC报警代码，驱动器报警代码
+	D1							:					DINT						;
+END_VAR
+VAR_OUTPUT
+	// 报警启用标志位
+	bEnabled					: 					BOOL						;
+	// 报警发生标志位
+	bErrorOccur					:					BOOL						;
+END_VAR
+VAR
+	(**暂时不启用，需要时添加至输入变量中**)
+	//是否对当前报警启用滤波功能(**暂时不启用，需要时添加至输入变量中**)
+   bFilterOn					:                  	BOOL:=FALSE					;
+	//滤波功能的时间设定(**暂时不启用，需要时添加至输入变量中**)
+   timeFilter					:                   TIME := TIME#0MS			;	
+	// 是否使用reset信号复位:  true=复位信号为1时且触发信号为0时，复位报警状态;  false=触发信号为0时自动复位报警信号(**暂时不启用，需要时添加至输入变量中**)
+	bResetSignalUse				:					BOOL := TRUE				;	
+	//设定是否将当前报警记录到历史记录中(**暂时不启用，需要时添加至输入变量中**)
+   	bSavetoHistory				:                 	BOOL := TRUE				;
+	strVersion: STRING;
+
+	
+	// 获取报警时间
+	rtrigGetTime				:          			R_TRIG						;
+  	// 滤波延时
+	tonFilter					:               	TON							;	
+ 	// 报警复位信号下降沿
+	ftrigResetExe				:          			F_TRIG						;	
+	i							:                 	INT							;
+	strTemp						: 					STRING						;
+	fbFormatStringDateTime		: 					FB_FormatString				;
+	strDateTime					: 					STRING(255)					;
+	wstrErrorMessage			: 					WSTRING						;
+	bFirstRun: BOOL := true;
+	ton100msDelay: TON;
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(***
+by Yu
+	
+	2025-07-23	报警设置功能块，每一个报警都需实例化一次。
+	2025-07-24	输出的报警信息中不同时整合报警时间和报警ID号,减少字符的使用长度。报警时间、报警ID号、报警信息，以结构体的形式分别输出。
+	2025-10-29	报警发生时，增加获取系统时间判定，防止出现开机一瞬间，系统时间还未获取时，出现的错误时间报警
+
+
+***)
+//当前版本更新时间
+strVersion := '2025-10-29' ;
+
+//初始化
+IF bFirstRun THEN
+;
+END_IF
+
+
+//报警ID号超范围直接退出
+IF iErrorID> iErrorIDMax OR iErrorID< 1 THEN
+	RETURN;
+END_IF
+
+//报警复位
+ ftrigResetExe(CLK:=bReset);
+ IF ((bResetSignalUse AND  ftrigResetExe.Q)OR NOT bResetSignalUse )AND NOT bExecute OR NOT bEnable THEN
+    bErrorOccur:=FALSE;
+    arrstError[iErrorID].bAlarmAction1:=FALSE;
+    arrstError[iErrorID].bAlarmAction2:=FALSE;
+    arrstError[iErrorID].bAlarmAction3:=FALSE;
+    arrstError[iErrorID].bAlarmAction4:=FALSE;
+	arrstError[iErrorID].bEnabled:=bEnable;
+	arrstError[iErrorID].bErrorOccur:=bErrorOccur;
+	arrstError[iErrorID].bErrorExe:=bExecute;
+	arrstError[iErrorID].enumErrorClass:=enumErrorClass;
+	arrstError[iErrorID].iErrorID:=iErrorID;
+	arrstError[iErrorID].bResetExe:=bReset;
+	arrstError[iErrorID].bResetSignalUse:=bResetSignalUse;
+ END_IF
+ 
+	
+//滤波延时
+tonFilter(IN:=bFilterOn AND bExecute , PT:=timeFilter );
+
+//报警发生上升沿触发且系统时间读取成功
+rtrigGetTime(CLK:=((NOT bFilterOn ) OR (bFilterOn AND tonFilter.Q))AND bEnable AND bExecute AND bGetSystemTimeDone  );
+
+//将当前系统时间写入到对应的轴结构体中 
+IF rtrigGetTime.Q THEN
+	arrstError[iErrorID].dtErrorOccorTime:=SYSTEMTIME_TO_DT(tActSystemTime);
+END_IF
+
+//报警发生时触发
+IF ((NOT bFilterOn ) OR (bFilterOn AND tonFilter.Q)) AND bEnable AND bExecute AND bGetSystemTimeDone THEN
+	//报警发生标志位
+	bErrorOccur:=TRUE;
+	//将报警后的触发动作写入对应的ErrorID号下
+	arrstError[iErrorID].bAlarmAction1:=bAlarmAction1;
+	arrstError[iErrorID].bAlarmAction2:=bAlarmAction2;
+	arrstError[iErrorID].bAlarmAction3:=bAlarmAction3;
+	arrstError[iErrorID].bAlarmAction4:=bAlarmAction4;
+	//设定此ErrorID号报警是否启用
+	arrstError[iErrorID].bEnabled:=bEnable;
+	//此ErrorID号报警发生标志位
+	arrstError[iErrorID].bErrorOccur:=bErrorOccur;
+	//此ErrorID号报警触发信号
+	arrstError[iErrorID].bErrorExe:=bExecute;
+	//此ErrorID号报警警报等级	
+	arrstError[iErrorID].enumErrorClass:=enumErrorClass;
+	//此ErrorID号报警报警ID	
+	arrstError[iErrorID].iErrorID:=iErrorID;
+	//此ErrorID号报警报警复位信号		
+	arrstError[iErrorID].bResetExe:=bReset;
+	//设定此ErrorID号报警是否与复位信号联动
+	arrstError[iErrorID].bResetSignalUse:=bResetSignalUse;
+END_IF
+
+//报警发生时的时间转换程string类型。时间-报警ID号-报警信息，组合输出
+IF rtrigGetTime.Q THEN
+	fbFormatStringDateTime(
+		sFormat:= '%D-%D-%D-%D:%D:%D',
+		arg1:= F_WORD(tActSystemTime.wYear),
+		arg2:= F_WORD(tActSystemTime.wMonth),
+		arg3:= F_WORD(tActSystemTime.wDay),
+		arg4:= F_WORD(tActSystemTime.wHour),
+		arg5:= F_WORD(tActSystemTime.wMinute),
+		arg6:= F_WORD(tActSystemTime.wSecond),
+		sOut=> strDateTime
+		);
+	//默认使用中文报警信息
+	IF bLanguageSet=1 THEN
+		wstrErrorMessage:=STRING_TO_WSTRING(strErrorInfoEN);
+	ELSE
+		wstrErrorMessage:=wstrErrorInfoCN;
+	END_IF	
+	F_FormatWstringErrInfo(wstrIn:=wstrErrorMessage,wstrPreMessage:=wstr1,diMessage:=D1,wstrOut=>wstrErrorMessage);	
+	//整合需要添加的字符后，直接输出，不添加报警时间以及报警ID，减少字符的长度
+	arrstError[iErrorID].wstrErrorMessage := wstrErrorMessage ;	
+//	wstrErrorMessage:=	WCONCAT(WCONCAT(WCONCAT("ID",INT_TO_WSTRING(iErrorID)),","),wstrErrorMessage);		
+//	arrstError[iErrorID].wstrErrorMessage := WCONCAT(WCONCAT(STRING_TO_WSTRING(strDateTime),"-"),wstrErrorMessage);	
+END_IF
+	   
+
+//当选择将此报警记录如历史报警记录后，触发记录。最大记录数组200组。数据向后依次排列
+IF bSavetoHistory  AND rtrigGetTime.Q THEN
+	iHistoryErrorNum:=iHistoryErrorNum+1;
+	IF iHistoryErrorNum>=200 THEN
+		iHistoryErrorNum:=200;
+	END_IF
+	IF iHistoryErrorNum>=2 THEN
+		FOR i:=iHistoryErrorNum TO 2 BY -1 DO
+			arrstHistoryError[i]:=arrstHistoryError[i-1];
+		END_FOR
+	END_IF
+ 	arrstHistoryError[1].iErrorID:=iErrorID;
+	arrstHistoryError[1].dtErrorTime:=arrstError[iErrorID].dtErrorOccorTime;
+  	arrstHistoryError[1].wstrErrorMessage:=arrstError[iErrorID].wstrErrorMessage;
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="FB_SetError">
+      <LineId Id="72" Count="116" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

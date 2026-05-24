@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_LightCtr" Id="{6443d42c-8088-4ef9-aac8-0a7fb140b7d7}">
+    <Declaration><![CDATA[TYPE ST_LightCtr :
+STRUCT
+	iChannel1ValueSet		:				UINT						;			//通道1设定值
+	iChannel2ValueSet		:				UINT						;			//通道2设定值
+	iChannel3ValueSet		:				UINT						;			//通道3设定值
+	iChannel4ValueSet		:				UINT						;			//通道4设定值
+	iChannel1ActValue		:				UINT						;			//通道1当前值
+	iChannel2ActValue		:				UINT						;			//通道2当前值
+	iChannel3ActValue		:				UINT						;			//通道3当前值
+	iChannel4ActValue		:				UINT						;			//通道4当前值
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

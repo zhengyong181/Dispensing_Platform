@@ -1,0 +1,295 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="System_State" Id="{b179b114-a510-46f4-91a4-07ecde8bfb98}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM System_State
+VAR
+	udiError: INT;
+	NCI_BII_IOLINK: INT;
+	biXLIMP: INT;
+	HomeStep:INT;
+	HomTime:ton;
+	bPowerOK: INT;
+	SysHomstep:INT;
+	SysHomstept:ton;
+	SysHomTrig:R_trig;	
+	Setposition :TON;
+	fbReadNetid:FB_ReadNetid;
+	posEdgEmg:r_trig;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//(* 整机首次上点延时*)
+tonSystemFirstRun(IN:=TRUE , PT:= T#10S);
+posEdgeFirstRun(CLK:=tonSystemFirstRun.Q , Q=> );
+IF posEdgeFirstRun.Q THEN
+   fbReadNetid(sNetID=>stSystem.strNetID);
+END_IF
+(*1-*EMS*)
+stSystem.arErrorID[15]:=NOT X000001;
+(*2-*Reset*)
+IF stSystem.bReset THEN
+   arstAxis[1].Control.bReset_A:=TRUE;
+   arstAxis[2].Control.bReset_A:=TRUE;
+   arstAxis[3].Control.bReset_A:=TRUE;
+   arstAxis[4].Control.bReset_A:=TRUE;
+   arstAxis[5].Control.bReset_A:=TRUE;
+   arstAxis[6].Control.bReset_A:=TRUE;
+   arstAxis[7].Control.bReset_A:=TRUE;
+   arstAxis[8].Control.bReset_A:=TRUE;
+   arstAxis[9].Control.bReset_A:=TRUE;
+   arstAxis[10].Control.bReset_A:=TRUE;
+   stSystem.bReset:=FALSE;
+END_IF
+(*3-*Stop*)
+IF stSystem.bStop THEN
+   arstAxis[1].Control.bStop_A:=TRUE;
+   arstAxis[2].Control.bStop_A:=TRUE;
+   arstAxis[3].Control.bStop_A:=TRUE;
+   arstAxis[4].Control.bStop_A:=TRUE;
+   arstAxis[5].Control.bStop_A:=TRUE;
+   arstAxis[6].Control.bStop_A:=TRUE;
+   arstAxis[7].Control.bStop_A:=TRUE;
+   arstAxis[8].Control.bStop_A:=TRUE;
+   arstAxis[9].Control.bStop_A:=TRUE;
+   arstAxis[10].Control.bStop_A:=TRUE;
+   stSystem.bStop:=FALSE;
+END_IF
+(*4-*Axis_Power*)
+IF stSystem.bPower AND NOT stSystem.arErrorID[15] THEN
+   arstAxis[1].Control.bPowerOn:=TRUE;
+   arstAxis[2].Control.bPowerOn:=TRUE;
+   arstAxis[3].Control.bPowerOn:=TRUE;
+   arstAxis[4].Control.bPowerOn:=TRUE;
+   arstAxis[5].Control.bPowerOn:=TRUE;
+   arstAxis[6].Control.bPowerOn:=TRUE;
+   arstAxis[7].Control.bPowerOn:=TRUE;
+   arstAxis[8].Control.bPowerOn:=TRUE;
+   arstAxis[9].Control.bPowerOn:=TRUE;
+   arstAxis[10].Control.bPowerOn:=TRUE;
+//   stSystem.bStop:=FALSE;
+END_IF
+posEdgEmg(CLK:=stSystem.arErrorID[15] , Q=> );
+IF posEdgEmg.Q THEN
+   arstAxis[1].Control.bPowerOn:=FALSE;
+   arstAxis[2].Control.bPowerOn:=FALSE;
+   arstAxis[3].Control.bPowerOn:=FALSE;
+   arstAxis[4].Control.bPowerOn:=FALSE;
+   arstAxis[5].Control.bPowerOn:=FALSE;
+   arstAxis[6].Control.bPowerOn:=FALSE;
+   arstAxis[7].Control.bPowerOn:=FALSE;
+   arstAxis[8].Control.bPowerOn:=FALSE;
+   arstAxis[9].Control.bPowerOn:=FALSE;
+   arstAxis[10].Control.bPowerOn:=FALSE;
+END_IF
+
+(*5-*ALL_Power*)
+stSystem.bPowerOK:=arstAxis[1].State.bPowerOK AND arstAxis[2].State.bPowerOK AND arstAxis[3].State.bPowerOK AND arstAxis[4].State.bPowerOK AND arstAxis[5].State.bPowerOK	AND arstAxis[6].State.bPowerOK;
+(*6-*Home*)
+SysHomTrig(CLK:=stSystem.bHOME AND stSystem.bPowerOK , Q=> );
+IF SysHomTrig.Q THEN
+	HOMEstep:=0;
+	SysHomstep:=5;
+END_IF
+CASE SysHomstep OF
+	5: 
+       Axis_Home();
+	   SysHomstept(in:=TRUE,pt:=T#20MS);
+	   IF stSystem.bHOMEOK AND SysHomstept.Q THEN
+		 SysHomstept(in:=FALSE);
+         stSystem.bHOME:=FALSE;  
+		 SysHomstep:=10;  	   
+	   END_IF
+END_CASE
+
+
+Y000007:=arstVac[1].bVacuumReq;
+Y000006:=NOT	arstVac[1].bVacuumReq;
+
+Y000009:=arstVac[2].bVacuumReq;
+Y000008:=NOT	arstVac[2].bVacuumReq;
+
+Y000010:=arstVac[3].bVacuumReq;
+Y000011:=NOT	arstVac[3].bVacuumReq;
+
+
+
+
+
+
+]]></ST>
+    </Implementation>
+    <Action Name="Axis_Home" Id="{c0add170-557c-4ab6-9a05-67dcbade11d8}">
+      <Implementation>
+        <ST><![CDATA[
+CASE HOMEstep OF
+  0:(*  *) 
+      stSystem.bHOMEOK := FALSE;  
+      arstAxis[1].Control.bHome_A:=FALSE;
+	  arstAxis[2].Control.bHome_A:=FALSE; 
+	  arstAxis[3].Control.bHome_A:=FALSE;
+	  arstAxis[4].Control.bHome_A:=FALSE;
+	  
+      arstAxis[5].Control.bHome_A:=FALSE;
+	  arstAxis[6].Control.bHome_A:=FALSE;
+	  arstAxis[7].Control.bHome_A:=FALSE;
+	  arstAxis[8].Control.bHome_A:=FALSE;
+	  arstAxis[9].Control.bHome_A:=FALSE;
+	  arstAxis[10].Control.bHome_A:=FALSE;
+	  stSystem.bHoming:=TRUE;
+	  HOMEstep:=5;
+  5: // 绝对值轴回零
+      arstAxis[6].Control.bHome_A:=TRUE;
+	  arstAxis[7].Control.bHome_A:=TRUE;
+	  arstAxis[8].Control.bHome_A:=TRUE;
+	  arstAxis[9].Control.bHome_A:=TRUE;
+	  arstAxis[10].Control.bHome_A:=TRUE;
+	  HOMEstep:=10;
+  10:(*Z轴回零动作 Z1 Z2*)
+     arstAxis[4].Control.bHome_A:=TRUE;
+	 arstAxis[5].Control.bHome_A:=TRUE;
+	 HomeStep:=15;
+  15:	
+	 HomTIME(IN:=TRUE,PT:=T#20MS,Q=>,ET=>);
+	 IF arstAxis[4].State.bHome_OK AND NOT arstAxis[4].State.bHoming AND 
+        arstAxis[5].State.bHome_OK AND NOT arstAxis[5].State.bHoming AND HomTIME.Q THEN
+		HomTIME(IN:=FALSE);
+		HomeStep:=20;
+	 ELSIF arstAxis[4].State.bError   AND  arstAxis[5].State.bError  AND HomTIME.Q THEN
+		HomTIME(IN:=FALSE);
+		HomeStep:=1000;
+	 END_IF
+	   
+  20:(* R回零动作*)
+     arstAxis[3].Control.bHome_A:=TRUE;
+	 HomTIME(IN:=TRUE,PT:=T#20MS,Q=>,ET=>);
+	 IF arstAxis[3].State.bHome_OK AND NOT arstAxis[3].State.bHoming AND HomTIME.Q   THEN
+		HomTIME(IN:=FALSE);
+		HomeStep:=30;
+	 ELSIF arstAxis[3].State.bError   AND HomTIME.Q THEN
+		HomTIME(IN:=FALSE);
+		HomeStep:=1000;
+	 END_IF
+	 
+  30:(* XY回零动作*)
+     arstAxis[1].Control.bHome_A:=TRUE;
+	 arstAxis[2].Control.bHome_A:=TRUE;
+		HomeStep:=35;
+35:
+     HomTIME(IN:=TRUE,PT:=T#20MS,Q=>,ET=>);
+  	 IF arstAxis[1].State.bHome_OK  AND arstAxis[2].State.bHome_OK AND HomTIME.Q THEN
+		HomTIME(IN:=FALSE);
+		HomeStep:=40;
+	 ELSIF arstAxis[1].State.bError   AND  arstAxis[2].State.bError  AND HomTIME.Q THEN
+		HomTIME(IN:=FALSE);
+		HomeStep:=1000;
+	 END_IF 
+  40:(* xy位置比较写入参考位置设置*)	
+//     arstCamCtrlIO[1].bSetRefPos:=TRUE;
+//	 arstCamCtrlIO[2].bSetRefPos:=TRUE;
+//	 Setposition(IN:=arstCamCtrlIO[1].bSetRefPos AND stCamCtrlIO[2].bSetRefPos ,PT:=T#20MS,Q=>,ET=>);
+//	 IF Setposition.Q THEN
+		HomeStep:=50; 
+//	 END_IF
+	 
+  50:(* 重新使能 *) 
+//     stCamCtrlIO[1].bSetRefPos:=FALSE;
+//	 stCamCtrlIO[2].bSetRefPos:=FALSE;
+//	 IF stCamCtrlIO[1].bSetRefPos=FALSE AND  stCamCtrlIO[2].bSetRefPos=FALSE THEN
+	 HOMEstep:=60;
+//	 END_IF
+	 
+  60:(*建立NCI通道*)
+     stSystem.bHoming:=FALSE;
+     stSystem.bHOMEOK:=TRUE;
+ 1000:
+     stSystem.bHoming:=FALSE;
+     stSystem.bHOMEOK:=FALSE;				
+END_CASE]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="System_State">
+      <LineId Id="147" Count="4" />
+      <LineId Id="132" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="7" Count="1" />
+      <LineId Id="12" Count="3" />
+      <LineId Id="24" Count="1" />
+      <LineId Id="166" Count="1" />
+      <LineId Id="171" Count="0" />
+      <LineId Id="169" Count="1" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="19" Count="2" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="27" Count="1" />
+      <LineId Id="172" Count="4" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="43" Count="3" />
+      <LineId Id="48" Count="1" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="177" Count="3" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="198" Count="0" />
+      <LineId Id="200" Count="0" />
+      <LineId Id="203" Count="8" />
+      <LineId Id="201" Count="1" />
+      <LineId Id="199" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="32" Count="1" />
+      <LineId Id="53" Count="13" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="118" Count="0" />
+      <LineId Id="39" Count="3" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+    <LineIds Name="System_State.Axis_Home">
+      <LineId Id="2" Count="6" />
+      <LineId Id="49" Count="1" />
+      <LineId Id="107" Count="5" />
+      <LineId Id="9" Count="1" />
+      <LineId Id="113" Count="0" />
+      <LineId Id="115" Count="3" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="11" Count="2" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="14" Count="19" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="67" Count="1" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="120" Count="0" />
+      <LineId Id="100" Count="5" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="84" Count="5" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="90" Count="2" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="40" Count="1" />
+      <LineId Id="44" Count="2" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

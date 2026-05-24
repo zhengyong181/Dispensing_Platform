@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Vacuum" Id="{a848827a-16e8-4c57-985e-5f654e790299}">
+    <Declaration><![CDATA[(*
+
+TYPE ST_Vacuum :
+STRUCT
+    (* 输入 *)
+    bVacuumReq     : BOOL;   // 抽真空请求
+    bReleaseReq    : BOOL;   // 破真空请求
+    xVacuumOk      : BOOL;   // 真空到位信号
+
+    (* 输出 *)
+    qVacuumValve   : BOOL;   // 真空阀
+    qReleaseValve  : BOOL;   // 破真空阀
+
+    (* 状态 *)
+    bVacuumDone    : BOOL;
+    bAlarm         : BOOL;
+END_STRUCT
+END_TYPE
+
+*)
+
+TYPE ST_Vacuum :
+STRUCT
+    (* 输入 *)
+    bVacuumReq      : BOOL;   // 抽真空请求
+END_STRUCT
+END_TYPE
+
+
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_System" Id="{62aa9031-881f-4e63-b711-14ee6f5bb942}">
+    <Declaration><![CDATA[TYPE ST_System :
+STRUCT
+	    strNetID                                                               :STRING;
+        bSystemPowerOn                                        :BOOL                                                        ;                        //系统动力电上电标志        
+        bManual                                                        :BOOL                                                        ;                        //手自动标志
+        bReset                                                        :BOOL                                                        ;                        //复位
+        bStop                                                        :BOOL                                                        ;                        //停止
+        bEMG                                                               :BOOL                                                        ;                        //急停
+        bSafetyDoor                                                :BOOL                                                        ;                        //安全门
+        bLightOn                                                :BOOL                                                        ;                        //照明灯
+        bAxesPowerOK                                            :BOOL                                                        ;                        //所有轴均上使能
+        bAxesHomeOK                                                :BOOL                                                        ;                        //所有轴均回零完成
+	bHOME                             :BOOL                                      ;           // 整机回零
+	bHoming                           :BOOL                                      ;           // 整机回零中
+	bHOMEOK                           :BOOL                                      ;           // 整机回零完成
+	bPower                            :BOOL                                      ;           // 整机使能
+	bPowerOK                          :BOOL                                      ;           // 整机使能完成
+	bUVon                             :BOOL                                      ;           // UV开关
+	bUVErr                            :BOOL                                      ;           // UV开关报错
+        bAxesInMotion                                        :BOOL                                                        ;                        //有轴移动
+        bError                                                        :BOOL                                                        ;                        //报错
+        bWarning                                                :BOOL                                                        ;                        //警告
+        bLightError                                                :BOOL                                                        ;                        //轻量错误
+        bCriticalError                                        :BOOL                                                        ;                        //严重错误
+        bErrorUpdate                                        :BOOL                                                           ;                        //出现新的报错                                        
+        arErrorID                                                :ARRAY[0..999] OF BOOL                                     ;                        //报警索引号
+        arstrErrorInfo                                        :ARRAY[0..999] OF STRING                                      ;                        //报警信息（英）
+        strDeviceName                                        :STRING                                                        ;                        //设备名称
+        uiPinNum                                                :UINT                                                        ;                        //剥离头类型，1-单电机，2-双电机
+	    bSignalLampRed	                                       :BOOL	; // 三色灯-红                   
+        bSignalLampGreen	                                    :BOOL	 ;// 三色灯-绿
+        bSignalLampYellow	                                     :BOOL	 ;// 三色灯-黄
+        bSingalLampBuzzle	                                      :BOOL	; // 三色灯-蜂鸣器
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

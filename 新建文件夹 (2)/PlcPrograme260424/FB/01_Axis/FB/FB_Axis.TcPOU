@@ -1,0 +1,1318 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Axis" Id="{be77e32b-77c8-4454-9d33-f39e03cae286}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Axis
+VAR_IN_OUT
+	stAxis: ST_Axis;
+	stSystem: ST_System;
+	AxisRef: Axis_REF;
+	stHomeADS:ST_HomeAdsGroup;
+	stHomeCoe:ST_HomeCoEGroup;
+END_VAR
+VAR_INPUT
+
+END_VAR
+VAR
+	strVersion: STRING;
+	fbMcWritePosMonitorDisable: MC_WriteParameter;
+	fbMcWritePosMonitorEnable: MC_WriteParameter;
+	fbMcReadDistPerPulse: MC_ReadParameter;
+	fbMcReadGearRatio: MC_ReadParameter;
+	// 每脉冲移动量
+	lrDistPerPulse: LREAL := 0.0001;
+	// 减速比
+	lrGearRatio: LREAL := 1;
+	bySubIndex: BYTE;
+	wIndex: WORD;
+	bReadActPos0x6064: BOOL;
+	fbEcCoESdoReadActPos: FB_EcCoESdoRead;
+	blink100ms: BLINK;
+	fbEcCoeSdoReadExDriveOp: FB_EcCoeSdoReadEx;
+	strAxisName: STRING;
+	bMoveBaseCon: BOOL;
+	fbMcSetPos: MC_SetPosition;
+	bHomeExe: BOOL;
+	bReset: BOOL;
+	bHoming: BOOL;
+	bPowerOk:BOOL;
+	// 1-定位运动
+	// 2-JOG
+	// 3-回零
+	// 4-轴置位
+	// 5-轴停止
+	uiMotionCMD: UINT;
+	fbDriveErrorCode: FB_EcCoESdoRead;
+	tonPowerOn: TON;
+	RtrigPowerOn: R_TRIG;
+	mcPower: MC_Power;
+	mcReadStatus: MC_ReadStatus;
+	mcReset: MC_Reset;
+	mcHMJog: MC_Jog;
+	mcHMJogInching: MC_Jog;
+	rHMJogVel: REAL;
+	mcJogContinuous: MC_Jog;
+	mcJogInching: MC_Jog;
+	mcHomeP: MC_Home;
+	mcHomeN: MC_Home;
+	mcHmAbsMove: MC_MoveAbsolute;
+	bHomed: BOOL;
+	bHomeStop: BOOL;
+	bHomeCMD: BOOL;
+	bHomeCMDLast: BOOL;
+	iHomeStep: INT;
+	bHomeJogFExe: BOOL;
+	bHomeJogBExe: BOOL;
+	lrHomeOffset: LREAL;
+	bJogFExe: BOOL;
+	bJogBExe: BOOL;
+	bPosUpdate: BOOL;
+	bRelMoveCon: BOOL;
+	bAbsMoveCon: BOOL;
+	bPosCmd: BOOL;
+	bMoveAbsExe: BOOL;
+	bMoveRelExe: BOOL;
+	iPosId: INT;
+	// 相对运动初始位置
+	rRelStartPos: REAL;
+	rVelEx: REAL;
+	rPosEx: REAL;
+	bRelEx: BOOL;
+	rAccEx: REAL;
+	rDecEx: REAL;
+	rJerkEx: REAL;
+	rVelExTmp: REAL;
+	eDirection: MC_DIRECTION;
+	iPosInstNum: INT;
+	bPosDone1: BOOL;
+	bPosDone2: BOOL;
+	bPosBusy1: BOOL;
+	bPosBusy2: BOOL;
+	fbMC_MoveA: MC_MoveAbsolute;
+	fbMC_MoveA2: MC_MoveAbsolute;
+	fbMC_MoveR: MC_MoveRelative;
+	fbMC_MoveR2: MC_MoveRelative;
+	TonAxisMove: TON;
+	lrStopMoveDec: LREAL;
+	bStopMoveExe: BOOL;
+	bStopExe: BOOL;
+	fbMcStop: MC_Stop;
+	bResetLast: BOOL;
+	bWrongDirection: BOOL;
+	bTouchProbeEnable: BOOL;
+	w60B9: WORD;
+	RtrigTouchDone: R_TRIG;
+	Ton01: TON;
+	diTouchCatchPos: DINT;
+	bHomeSetPos: BOOL;
+	MC_SetPosHome: MC_SetPosition;
+	Ton06: TON;
+	Ton05: TON;
+	Ton03: TON;
+	Ton04: TON;
+	Ton02: TON;
+	bMoveZeroPos: BOOL;
+	MC_MoveZeroHome: MC_MoveAbsolute;
+	bStopMoveExeLast: BOOL;
+	m: INT;
+	RtrigJogF: R_TRIG;
+	RtrigJogB: R_TRIG;
+	bHomeJogInchingFExe: BOOL;
+	TonWaitStandStill: TON;
+	blink10ms: BLINK;
+	bSDOExe: BOOL := true;
+	Ton07: TON;
+	uiStatusWord: UINT;
+	FB_EcCoESdoRead_6041: FB_EcCoESdoRead;
+	// 修改驱动器工作字
+	FB_EcCoESdoWrite_6060: FB_EcCoESdoWrite;
+	siOldModeOfOperation: SINT;
+	// 定位运动完成中间变量
+	bGo_OK: BOOL;
+	TonReadDriveErrorCode: TON;
+	arrfbSetAlarm: ARRAY[1..12] OF FB_SetError;
+	FB_EcCoESdoWrite_6098: FB_EcCoESdoWrite;
+	FB_EcCoESdoWrite_6099_01: FB_EcCoESdoWrite;
+	FB_EcCoESdoWrite_6099_02: FB_EcCoESdoWrite;
+	FB_EcCoESdoWrite_609A: FB_EcCoESdoWrite;
+	FB_EcCoESdoWrite_607C: FB_EcCoESdoWrite;
+	siOldHomeMethod: SINT;
+	udiOldHomeVelHigh: UDINT;
+	udiOldHomeVelLow: UDINT;
+	udiOldHomeAcc: UDINT;
+	udiHomeVelHigh: UDINT;
+	udiHomeVelLow: UDINT;
+	udiHomeAcc: UDINT;
+	Ton61: TON;
+	bPosMonitorDisabled: BOOL;
+	bPosMonitorAbled: BOOL;
+	bSDO: BOOL;
+	Ton62: TON;
+	strDriveAddressNetID: STRING;
+	uiDriveAddressSlaveAddr: UINT;
+	mcReadDriveAddress: MC_ReadDriveAddress;
+	tonReadDriveAddr: TON;
+	bInitDone: BOOL;
+	diHomeOffset: DINT;
+	fbEcCoeSdoWriteExTargetTrq: FB_EcCoeSdoWriteEx;
+	iTorqueTemp: INT;
+	iTorqueTempOld: INT;
+	iHomeStepPre: INT;
+	FBTouchProbeHomeBylimit:FB_TouchProbe_Home_Bylimit;
+	FBDriveHome:FB_Drive_Home;
+	
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[ (*********
+ 	by Yu
+	
+	2023-12-15  1-增加 带绝对值编码器运动轴的回零标志位，默认一直存在原点。
+				2-根据模轴或线性轴，输出当前位置。
+	2023-12-19  增加置位功能	
+	2023-12-26 	1-增加参数读取功能，分别读取当前轴设定的分辨率和减速比参数，探针回零时使用
+				2-增加轴运行模式读取设定功能，通过COE实现。默认CSP模式。
+				3-将wIndex、bySubIndex变量由外部轴变量转换为内部变量			
+	2024-1-2	1-增加是否EtherCAT总线控制轴的判断，EtherCAT总线控制轴方可通过COE更换运行模式。	
+				2-EtherCAT总线轴运行模式切换，松下电机需要取消 0x6060 的映射。
+							
+	2024-2-21	增加回零模式-4旋转寻Z相回零中，回零开始前移出Z相位置，同时增加寻Z相完成后等待到位时间
+	2024-3-29	轴参数结构体中增加模轴当前位置变量 rActModuloPos ，同时分别输出模轴位置和线性位置
+	2024-4-11	更改轴报警信息
+	2024-4-15	增加回零模式5------碰硬限位回零，根据转矩判断
+	2024-4-16	增加 MC_ReadDriveAddress 读取轴ADS参数，无需外部写入设定。
+	2024-4-28	增加NC ErrorID输出，驱动器报警错误码输出,取消输出变量udiErrorID
+	2024-5-7	优化碰硬限位回零模式，重新上使能，处理力矩问题
+	2024-5-31	增加版本更新时间记录变量
+	2024-06-04	将JOG运行，HOME运行，Pos运行的运行条件Con写入首次运行中，不在外部额外写入，外部根据实际需求写。
+	2024-06-22	增加回零模式6 ---- 驱动器回零模式
+	2024-06-24	屏蔽未上使能报警
+	2024-07-05  增加回零模式6下，非回零状态，将运行模式写成8-CSP模式。
+	2024-07-27	定位运动，绝对式运行，增加到位信号 的判定条件 - 位置比对：当前值与设定值偏差不超过 0.01 
+	2024-08-15	到位判断，位置偏差参数开放。初始值为 0.01
+	2024-08-16	增加定位完成中间变量 ，与位置偏差判断共同输出到位完成信号
+				取消可变数组，只允许走9个位置
+	2024-08-17	停止信号进入，清楚 定位运动中的 moving 信号，以及 iposId
+				驱动器报警增加延时，先读取报警code，50ms后输出
+	2024-08-20	增加回零流程开始时，复位回零功能块
+	2025-02-06	增加复位触发信号
+				功能块整理为多个Action。
+	2025-03-14	增加程序可读性,取消9个位置存储方式。只支持走一个位置。后续可通过不断刷入位置来实现走多个位置。
+				增加相对运动位置到位判断
+				修改多次定位，在相对位置运动下不支持多次定位,只有在绝对位置运动下支持多次定位。
+	2025-03-26	取消对力矩模式切换的控制
+	2025-03-27	针对多轴驱动器，增加映射偏置
+	2025-07-23	改写轴报警输出功能，轴报警预设存储于数组 101 起，每轴预留 12 个报警位
+				修改当前功能块轴报警 ID 从 1 到 12，共计 12 组报警数据（空余一组）。
+	2025-08-04	修改回零模式 6 -通过驱动器回零。整合驱动器回零需要的参数。
+					1.删去 StatusWord , nState1 , nState2变量。删去 iPDO_6071（目标转矩）变量（后续需要可直接SDO读写）
+					2.打包驱动器回零需设置的参数变量，集合到一个结构体中：
+						a. 需要映射的变量 nCtrl1 , nCtrl2 , ControlWord . 控制值，分别映射 实际轴和 NC轴。
+						b. ModeOfOperatiion变量，尽量通过映射修改。如果驱动器的 PDO 不支持修改，采用SDO读写方式。
+						c. 新增参数 ———— 回零模式，回零速度（高、低速），回零加速度参数的设置。
+				删去回零模式 5 - 碰硬档根据力矩回零。在驱动器中直接设置这种回零模式，倍福设置回零模式 6 。
+	2025-08-05	更改 Init ，获取轴信息完成后，结束初始化。
+	2025-08-08 	新增驱动器回零模式下，对 home offset 参数的设置
+	2025-08-29	更新报警序号
+	2025-09-04	修改单原点回零。回零启动步序设置为5。停止按钮按下，同步清除 bJogHomeBExe/bJogHomeFExe 的信号。
+	2025-09-05	修改报警代码的映射范围。ErrorID 101 开始
+	2025/09/10	增加定位运动的判断。绝对定位时，目标位置和当前位置之差小于判定窗口，不移动，直接输出到位信号
+	2025/10/30	取消回零模式 3、4，需要进行Z相回零时，选用回零模式6-驱动器回零处理。
+	2026/04/10	增加驱动器工作模式读取，存入对应变量 stAxis.State.siDriveOperationMode
+				增加力矩设定程序。上位机写入参数值到 rTorque 中，程序中转换后写入 6071
+	2026/04/15	回零模式6-驱动器回零，回零完成后，增加读取6064，并将6064的值换算后写入NC位置中操作。
+	2025/04/21  回零模式6-驱动器回零。
+				针对限位未接入驱动器内的回零模式，增加变量，可控制轴在驱动器回零前先移动到对应的限位处,再根据需求搜寻Z相。
+				stAxis.Parameter.bHmDir 变量用于同步驱动器回零搜寻方向。
+				stAxis.Parameter.sthomeViaDrivePar.bMoveToLimit 变量用于设定是否执行先移动到限位的操作。
+				stAxis.Parameter.rHmVel 变量用于设置移动到限位的速度.
+				
+***********)
+//当前版本更新时间
+strVersion := '2026/04/21' ;
+
+
+//
+IF NOT bInitDone THEN
+	A_01_Init();
+ELSE
+	A_02_StateIn();
+	A_03_PowerOn();
+	A_04_Reset();
+	A_05_SetPos();
+	A_06_Home();
+	A_07_Jog();
+	A_08_Move();
+	A_09_Stop();
+	A_11_StateOut();
+	A_10_TrqCtr();
+	A_12_Error();
+END_IF;
+
+
+
+
+
+
+ 	
+
+
+
+
+]]></ST>
+    </Implementation>
+    <Action Name="A_01_Init" Id="{431e6a4d-0220-4470-8dd6-0689fe2a408f}">
+      <Implementation>
+        <ST><![CDATA[{region "初始化"}
+//模块首次运行，数据初始化 
+bHomeCmd:=FALSE;
+bHomeCmdLast:=FALSE;
+	 
+stAxis.Control.bHome_Con:=TRUE;
+stAxis.Control.bJogCcw_Con:=TRUE;
+stAxis.Control.bJogCw_Con:=TRUE;
+
+//速度不允许非正数		 
+IF stAxis.Parameter.rHmVel <= 0 THEN
+	stAxis.Parameter.rHmVel:= 5;
+END_IF;
+IF stAxis.Parameter.rHmAcc <= 0 THEN
+	stAxis.Parameter.rHmAcc:= 50;
+END_IF;
+IF stAxis.Parameter.rHmDec <= 0 THEN
+	stAxis.Parameter.rHmDec:= 50;
+END_IF;
+IF stAxis.Parameter.rHmJerk <= 0 THEN
+	stAxis.Parameter.rHmJerk:= 500;
+END_IF;	
+IF stAxis.Parameter.rJogVel_M <= 0 THEN
+	stAxis.Parameter.rJogVel_M := 10;
+END_IF;
+IF stAxis.Parameter.rJogVel_A <= 0 THEN
+	stAxis.Parameter.rJogVel_A := 10;
+END_IF;	
+IF stAxis.Parameter.rJogAcc_M <= 0 THEN
+	stAxis.Parameter.rJogAcc_M := 100;
+END_IF;	
+IF stAxis.Parameter.rJogAcc_A <= 0 THEN
+	stAxis.Parameter.rJogAcc_A := 100;
+END_IF;	
+IF stAxis.Parameter.rJogDec_M <= 0 THEN
+	stAxis.Parameter.rJogDec_M := 100;
+END_IF;	
+IF stAxis.Parameter.rJogDec_A <= 0 THEN
+	stAxis.Parameter.rJogDec_A := 100;
+END_IF;	
+
+stAxis.Parameter.rStopDec := 100000;
+ 
+stAxis.Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+
+		 
+	stAxis.Parameter.rInPosValue := REAL#0.01 ;	
+	  
+	stAxis.Pos.Ctrl.bGo_Con:=TRUE;
+	stAxis.Pos.Par.rVel:= 10;
+	stAxis.Pos.Par.rAcc:= 100;
+	stAxis.Pos.par.rDec:=100;
+	stAxis.Pos.Par.rJerk:=1000;
+
+	tonReadDriveAddr(IN:=TRUE , PT:=TIME#100MS , Q=> , ET=> );	 
+	mcReadDriveAddress(
+	Axis:= AxisRef, 
+	Execute:= tonReadDriveAddr.Q  , 
+	Done=> bInitDone , 
+	Busy=> , 
+	Error=> , 
+	ErrorID=> , 
+	DriveAddress=> );	 
+
+{endregion}
+	 
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_02_StateIn" Id="{9caea5f4-f59c-4441-893f-15acfef6fa75}">
+      <Implementation>
+        <ST><![CDATA[{region "状态读取”}
+fbMcReadDistPerPulse(
+	Axis:=AxisRef , 
+	Enable:=tonPowerOn.Q , 
+	ParameterNumber:=AxisEncoderScalingNumerator , 
+	ReadMode:=READMODE_ONCE , 
+	Value=>lrDistPerPulse );
+
+fbMcReadGearRatio(
+	Axis:= AxisRef, 
+	Enable:=tonPowerOn.Q , 
+	ParameterNumber:= AxisEncoderScalingDenominator,
+	ReadMode:=READMODE_ONCE , 
+	Value=>lrGearRatio );
+	 
+mcReadStatus(
+	Axis:= AxisRef, 
+	Enable:= TRUE, 
+	Valid=> , 
+	Busy=> , 
+	Error=> , 
+	ErrorID=> , 
+	ErrorStop=> , 
+	Disabled=> , 
+	Stopping=> , 
+	StandStill=> , 
+	DiscreteMotion=> , 
+	ContinuousMotion=> , 
+	SynchronizedMotion=> , 
+	Homing=> , 
+	ConstantVelocity=> , 
+	Accelerating=> , 
+	Decelerating=> , 
+	Status=> );
+
+stAxis.Parameter.rInPosValue := ABS(stAxis.Parameter.rInPosValue);	 
+	 
+//延时读取
+blink100ms(ENABLE:=TRUE,TIMELOW:=TIME#100MS,TIMEHIGH:=TIME#100MS);
+
+//轴状态读取
+stAxis.State.bStandStill := (AxisRef.Status.StandStill OR AxisRef.Status.NotMoving);
+stAxis.State.bInSync := AxisRef.Status.SynchronizedMotion;
+stAxis.State.bMoving := AxisRef.Status.Moving OR (stAxis.Parameter.uiHomeMode = 6 AND stAxis.State.bHoming) ;
+stAxis.State.bDirPositive := AxisRef.Status.PositiveDirection;
+stAxis.State.bDirNegative := AxisRef.Status.NegativeDirection;
+stAxis.State.udiNCErrorID := AxisRef.Status.ErrorID;	 
+	 
+strDriveAddressNetID 	:=stAxis.strNetID;// AxisRef.DriveAddress.NetID ;
+uiDriveAddressSlaveAddr :=stAxis.uiSlaveAddr;// AxisRef.DriveAddress.SlaveAddress ;
+
+fbDriveErrorCode(
+	sNetId:=strDriveAddressNetID  , 
+	nSlaveAddr:=uiDriveAddressSlaveAddr , 
+	nSubIndex:=16#00 , 
+	nIndex:=(16#603F + (stAxis.Parameter.uiAxisChannelNum - 1)*16#800), 
+	pDstBuf:= ADR(stAxis.State.uiDriveErrorCode) , 
+	cbBufLen:=SIZEOF(stAxis.State.uiDriveErrorCode) , 
+	bExecute:= AxisRef.Status.DriveDeviceError , 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> , 
+	cbRead=> );
+		 
+wIndex:=16#6064 + (stAxis.Parameter.uiAxisChannelNum - 1)*16#800;		  
+bySubIndex:=16#00;
+
+fbEcCoeSdoReadExDriveOp(
+	sNetId:= strDriveAddressNetID , 
+	nSlaveAddr:= uiDriveAddressSlaveAddr, 
+	nSubIndex:= 16#00 , 
+	nIndex:= (16#6061 + (stAxis.Parameter.uiAxisChannelNum - 1)*16#800), 
+	pDstBuf:= ADR(stAxis.State.siModeOfOperation), 
+	cbBufLen:= SIZEOF(stAxis.State.siModeOfOperation), 
+	bExecute:= blink100ms.OUT, 
+	tTimeout:= , 
+	bCompleteAccess:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> , 
+	cbRead=> );
+
+FB_EcCoESdoWrite_6060(
+	sNetId:= strDriveAddressNetID, 
+	nSlaveAddr:=uiDriveAddressSlaveAddr  , 
+	nSubIndex:=16#00 , 
+	nIndex:=16#6060 + (stAxis.Parameter.uiAxisChannelNum - 1)*16#800 , 
+	pSrcBuf:=ADR(stAxis.Parameter.sthomeViaDrivePar.ModeOfOperation) , 
+	cbBufLen:=SIZEOF(stAxis.Parameter.sthomeViaDrivePar.ModeOfOperation) , 
+	bExecute:=siOldModeOfOperation <> stAxis.Parameter.sthomeViaDrivePar.ModeOfOperation , 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> );
+		 
+siOldModeOfOperation := stAxis.Parameter.sthomeViaDrivePar.ModeOfOperation ;	 	
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_03_PowerOn" Id="{cf48d297-8f23-4c08-874e-24b12889aed9}">
+      <Implementation>
+        <ST><![CDATA[{region "使能&功能切换"}	 
+	 		  
+//运动条件
+bMoveBaseCon := stAxis.State.bPowerOK AND NOT stAxis.State.bHoming AND NOT stAxis.State.bError AND NOT  stSystem.bEMG;
+	
+//运动功能切换（位置模式）
+IF stAxis.State.bStandStill  THEN 
+	IF stAxis.Pos.Ctrl.bGo_A OR (stAxis.Pos.Ctrl.bGo_M AND stSystem.bManual) THEN
+		uiMotionCMD:=1;	
+	ELSIF stAxis.Control.bJogCw_A OR (stAxis.Control.bJogCw_M AND stSystem.bManual) THEN
+		uiMotionCMD := 2;
+	ELSIF stAxis.Control.bJogCcw_A OR (stAxis.Control.bJogCcw_M AND stSystem.bManual) THEN
+		uiMotionCMD :=2;
+	ELSIF (stAxis.Control.bHome_A OR (stAxis.Control.bHome_M AND stSystem.bManual)) AND NOT stAxis.Parameter.bAbsEnc THEN
+		uiMotionCMD :=3;
+	ELSIF stAxis.Control.bSetPos THEN
+		uiMotionCMD := 4;
+	END_IF;		
+END_IF;
+
+	 
+		  
+//伺服使能
+	tonPowerOn(
+	IN:=stAxis.Control.bPowerOn AND NOT AxisRef.Status.DriveDeviceError AND NOT stSystem.bEMG  ,
+	PT:=TIME#1MS);
+	
+    mcPower(
+	Axis:= AxisRef, 
+	Enable:=tonPowerOn.Q , 
+	Enable_Positive:= stAxis.State.bPSW OR stAxis.State.bHoming , (* 撞限位高电平*)
+	Enable_Negative:= stAxis.State.bNSW OR stAxis.State.bHoming, (* 撞限位高电平*)
+	Override:= 100, 
+	BufferMode:= , 
+	Options:= , 
+	Status=> stAxis.State.bPowerOK, 
+	Busy=> , 
+	Active=> , 
+	Error=> , 
+	ErrorID=> );
+
+//mcPower(
+//	Axis:= AxisRef, 
+//	Enable:=tonPowerOn.Q , 
+//	Enable_Positive:= TRUE , 
+//	Enable_Negative:= TRUE , 
+//	Override:= , 
+//	BufferMode:= , 
+//	Options:= , 
+//	Status=>stAxis.State.bPowerOK , 
+//	Busy=> , 
+//	Active=> , 
+//	Error=> , 
+//	ErrorID=> );				
+{endregion} ]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_04_Reset" Id="{6e385d4a-77bc-4458-907c-a0c0e9a5bd0d}">
+      <Implementation>
+        <ST><![CDATA[{region "轴复位"}	
+mcReset(
+	Axis:= AxisRef, 
+	Execute:= (stSystem.bReset  OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual)) , 
+	Done=> , 
+	Busy=> , 
+	Error=> , 
+	ErrorID=> );
+IF mcReset.Done OR mcReset.Error THEN
+	stSystem.bReset:=FALSE;
+	stAxis.Control.bReset_A:=FALSE;	 
+   stAxis.Control.bReset_M:=FALSE;
+END_IF;	
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_05_SetPos" Id="{348825f5-6d72-437e-882d-972a20a5c01c}">
+      <Implementation>
+        <ST><![CDATA[{region"轴置位"}
+IF uiMotionCMD = 4 THEN
+	fbMcSetPos(
+		Axis:=AxisRef , 
+		Execute:= stAxis.Control.bSetPos AND bMoveBaseCon , 
+		Position:= stAxis.Parameter.rSetPos, 
+		Mode:= , 
+		Options:= , 
+		Done=> , 
+		Busy=> , 
+		Error=> , 
+		ErrorID=> );
+	
+	stAxis.Control.bSetPos := FALSE;
+END_IF 
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_06_Home" Id="{6b1243dd-7510-4844-ac3f-3648f9d1a9c1}">
+      <Implementation>
+        <ST><![CDATA[{region  "轴回零"}
+//回零	
+IF  (uiMotionCMD = 3) AND (NOT stAxis.Parameter.bAbsEnc) THEN
+CASE stAxis.Parameter.uiHomeMode OF
+	0:// 限位回零
+	  FBTouchProbeHomeBylimit.bCMD_StartHomeIndex:=FALSE;
+      IF stAxis.Parameter.bHmDir=TRUE THEN
+		FBTouchProbeHomeBylimit.eCMD_HomeDirection:=MC_Negative_Direction;
+	  ELSE
+		FBTouchProbeHomeBylimit.eCMD_HomeDirection:=MC_Positive_Direction;	   
+	  END_IF
+	  FBTouchProbeHomeBylimit(
+	    bCMD_HomeExecute:= stAxis.Control.bHome_A, 
+	    bCMD_Reset:= stAxis.Control.bReset_A, 
+	    bCMD_EnableState:= stAxis.State.bPowerOK, 
+	    bCMD_StartHomeIndex:= , 
+	    eCMD_HomeDirection:= , 
+	    bCMD_PositiveLimit:= NOT stAxis.State.bPSw , 
+	    bCMD_NegativeLimit:= NOT stAxis.State.bNSw, 
+	    rCMD_HomePosition:= stAxis.Parameter.sthomeViaDrivePar.rHomeOffset, 
+	    rCMD_TowardsVelSetValue:= stAxis.Parameter.sthomeViaDrivePar.rHomeVelHigh, 
+	    rCMD_OffVelSetValue:= stAxis.Parameter.sthomeViaDrivePar.rHomeVelLow, 
+	    stHomeAdsGroup:= stHomeADS, 
+	    bResult_HomeDone=> stAxis.State.bHome_OK, 
+	    bResult_HomeBusy=> stAxis.State.bHoming, 
+	    bResult_HomeError=>(*stAxis.State.arErrorID[10]*), 
+	    nResult_HomeErrorID=> , 
+	    axis:=AxisRef );
+    6:// 驱动回零
+	
+    8:// 倍福探针回零
+      FBTouchProbeHomeBylimit.bCMD_StartHomeIndex:=TRUE;
+      IF stAxis.Parameter.bHmDir=TRUE THEN
+		FBTouchProbeHomeBylimit.eCMD_HomeDirection:=MC_Negative_Direction;
+	  ELSE
+		FBTouchProbeHomeBylimit.eCMD_HomeDirection:=MC_Positive_Direction;	   
+	  END_IF
+	  FBTouchProbeHomeBylimit(
+	    bCMD_HomeExecute:= stAxis.Control.bHome_A , 
+	    bCMD_Reset:= stAxis.Control.bReset_A, 
+	    bCMD_EnableState:= stAxis.State.bPowerOK, 
+	    bCMD_StartHomeIndex:= , 
+	    eCMD_HomeDirection:= , 
+	    bCMD_PositiveLimit:= NOT stAxis.State.bPSw , 
+	    bCMD_NegativeLimit:= NOT stAxis.State.bNSw, 
+	    rCMD_HomePosition:= stAxis.Parameter.sthomeViaDrivePar.rHomeOffset, 
+	    rCMD_TowardsVelSetValue:= stAxis.Parameter.sthomeViaDrivePar.rHomeVelHigh, 
+	    rCMD_OffVelSetValue:= stAxis.Parameter.sthomeViaDrivePar.rHomeVelLow, 
+	    stHomeAdsGroup:= stHomeADS, 
+	    bResult_HomeDone=>stAxis.State.bHome_OK, 
+	    bResult_HomeBusy=> stAxis.State.bHoming, 
+	    bResult_HomeError=>(*stAxis.State.arErrorID[10]*), 
+	    nResult_HomeErrorID=> , 
+	    axis:=AxisRef );
+END_CASE
+bHomeExe:=stAxis.Control.bHome_A AND (uiMotionCMD = 3) AND (NOT stAxis.Parameter.bAbsEnc);
+bHoming:=stAxis.State.bHoming;
+END_IF
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_07_Jog" Id="{8a2c08be-6e2e-41b6-bb3c-ad20c06cf0a9}">
+      <Implementation>
+        <ST><![CDATA[{region "轴JOG"}
+//JOG运动
+IF uiMotionCMD = 2 THEN
+	bJogFExe:=((stSystem.bManual AND stAxis.Control.bJogCw_M) OR stAxis.control.bJogCw_A) AND stAxis.Control.bJogCw_Con   ;
+	bJogBExe :=((stSystem.bManual AND stAxis.Control.bJogCcw_M) OR stAxis.Control.bJogCcw_A) AND stAxis.Control.bJogCcw_Con   ;
+	CASE stAxis.Control.iJogMode OF
+		0:
+			mcJogContinuous(
+				Axis:=AxisRef , 
+				JogForward:=bJogFExe  AND ( stAxis.Parameter.rJogVel_A<>REAL#0) AND bMoveBaseCon AND NOT fbMcStop.Busy AND NOT bStopMoveExe, 
+				JogBackwards:=bJogBExe  AND ( stAxis.Parameter.rJogVel_A<>REAL#0) AND bMoveBaseCon AND NOT fbMcStop.Busy AND NOT bStopMoveExe, 
+				Mode:= E_JOGMODE.MC_JOGMODE_CONTINOUS, 
+				Position:= , 
+				Velocity:= stAxis.Parameter.rJogVel_A  , 
+				Acceleration:=stAxis.Parameter.rJogAcc_A, 
+				Deceleration:=stAxis.Parameter.rJogDec_A, 
+				Jerk:=REAL#100 * stAxis.Parameter.rJogVel_A , 
+				Done=> , 
+				Busy=> , 
+				Active=> , 
+				CommandAborted=> , 
+				Error=> , 
+				ErrorID=> );
+		1:
+			McJogInching(
+				Axis:=AxisRef, 
+				JogForward:= bJogFExe AND NOT stAxis.State.bPSw AND ( stAxis.Parameter.rJogVel_A<>REAL#0) AND bMoveBaseCon AND NOT fbMcStop.Busy, 
+				JogBackwards:= bJogBExe AND NOT stAxis.State.bNSw AND ( stAxis.Parameter.rJogVel_A<>REAL#0) AND bMoveBaseCon AND NOT fbMcStop.Busy, 
+				Mode:= E_JOGMODE.MC_JOGMODE_INCHING, 
+				Position:=  stAxis.Parameter.rJogPos_A, 
+				Velocity:= stAxis.Parameter.rJogVel_A, 
+				Acceleration:=stAxis.Parameter.rJogAcc_A , 
+				Deceleration:=stAxis.Parameter.rJogDec_A , 
+				Jerk:=REAL#100 * stAxis.Parameter.rJogVel_A , 
+				Done=> , 
+				Busy=> , 
+				Active=> , 
+				CommandAborted=> , 
+				Error=> , 
+				ErrorID=> );
+	END_CASE;
+END_IF;
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_08_Move" Id="{45254ede-c128-44ca-8eb3-83ba0409d1ab}">
+      <Implementation>
+        <ST><![CDATA[
+{region "轴定位"}
+//定位运动
+IF uiMotionCMD = 1 THEN
+	bPosUpdate:=FALSE;
+	bRelMoveCon:=bMoveBaseCon (*AND NOT AxisRef.Status.Stopping  *);
+	bAbsMoveCon:=bMoveBaseCon AND stAxis.State.bHome_OK (*AND NOT AxisRef.Status.Stopping *);
+	
+	//判断当前是否有新的定位触发
+	IF NOT stAxis.Pos.Par.bRelEnable AND (ABS(stAxis.Pos.Par.rPos - stAxis.State.rActPos )<= stAxis.Parameter.rInPosValue)  THEN
+		stAxis.Pos.State.bGo_Moving := FALSE ;
+		bGO_OK:= TRUE ;
+	ELSE			 
+		bPosCmd:=((stAxis.Pos.Ctrl.bGo_M AND stSystem.bManual) OR stAxis.Pos.Ctrl.bGo_A) AND NOT AxisRef.Status.Stopping ;
+	END_IF;		
+	//新的定位命令触发并满足运动条件时，更新目标位置
+	IF bPosCmd THEN                                                                       
+		IF stAxis.Pos.Ctrl.bGo_Con AND ((stAxis.Pos.Par.bRelEnable AND bRelMoveCon) OR (NOT stAxis.Pos.Par.bRelEnable AND bAbsMoveCon)) 	THEN
+			iPosId := 1 ;
+			bPosUpdate:=TRUE;
+		ELSE
+	//轴报警11-定位运动条件不满足报警
+			stAxis.State.bLightEror:=TRUE;
+			stAxis.State.arErrorID[11]:=TRUE;
+		END_IF;
+	END_IF;
+	//轴报警12-位运动条件不满足报警
+	//定位过程中条件不满足报警
+	IF stAxis.Pos.State.bGo_Moving THEN
+		IF NOT stAxis.Pos.Ctrl.bGo_Con  THEN									
+			stAxis.State.bLightEror:=TRUE;
+			stAxis.State.arErrorID[12]:=TRUE;
+		END_IF;
+	END_IF;
+		
+	//命令复位
+	stAxis.Pos.Ctrl.bGo_M:=FALSE;     																		
+	stAxis.Pos.Ctrl.bGo_A:=FALSE; 
+	
+	//命令触发   
+	//运动过程中，当前定位参数和目前定位参数不一致，需要重新定位     
+	IF iPosId <> -1 THEN                                                                               	
+		IF (rVelEx <> stAxis.Pos.Par.rVel) 
+			OR (NOT stAxis.Pos.Par.bRelEnable AND (rPosEx <> stAxis.Pos.Par.rPos))
+			(* OR (bRelEx <> stAxis.Pos.Par.bRelEnable)*) THEN
+				 
+			bPosUpdate:=TRUE;
+				 
+		END_IF;
+		IF bPosUpdate THEN
+			//复位定位状态                                                          	
+			stAxis.Pos.State.bGo_Moving := FALSE;	
+			
+			//更新当前定位参数
+			rRelStartPos := stAxis.State.rActPos;				
+			rPosEx:=stAxis.Pos.Par.rPos;                                                              			 
+			rVelEx:=stAxis.Pos.Par.rVel;
+			rAccEx:=stAxis.Pos.Par.rAcc;
+			rDecEx:=stAxis.Pos.Par.rDec;
+			rJerkEx:=stAxis.Pos.Par.rJerk;
+			bRelEx:=stAxis.Pos.Par.bRelEnable;	
+			rVelExTmp := rVelEx;
+			
+			//触发定位标志														
+			IF bRelEx THEN                                                                                       
+				bMoveAbsExe:=FALSE;
+				bMoveRelExe:=TRUE;					
+			ELSE
+				bMoveAbsExe:=TRUE;
+				bMoveRelExe:=FALSE;					
+			END_IF;	
+				
+			//更新定位指令1编号
+			IF	iPosInstNum = 0 THEN																		
+				iPosInstNum := 1;
+			ELSIF iPosInstNum = 1 THEN
+				iPosInstNum := 2;
+			ELSIF iPosInstNum = 2 THEN
+				iPosInstNum := 1;
+			END_IF;			
+		END_IF;
+	END_IF;
+
+	
+//线性轴绝对定位	
+	IF  NOT bRelEx THEN																		
+		fbMC_MoveA(
+			Axis:= AxisRef, 
+			Execute:= bMoveAbsExe AND (iPosInstNum = 1), 
+			Position:= rPosEx, 
+			Velocity:= rVelExTmp, 
+			Acceleration:= rAccEx, 
+			Deceleration:= rDecEx, 
+			Jerk:= rJerkEx, 
+			BufferMode:= MC_Aborting, 
+			Options:= ,
+			Done=> bPosDone1,
+			Busy=> bPosBusy1);		
+		fbMC_MoveA2(
+			Axis:= AxisRef, 
+			Execute:= bMoveAbsExe AND (iPosInstNum = 2), 
+			Position:= rPosEx, 
+			Velocity:= rVelExTmp, 
+			Acceleration:= rAccEx, 
+			Deceleration:= rDecEx, 
+			Jerk:= rJerkEx, 
+			BufferMode:= MC_Aborting, 
+			Options:= ,
+			Done=> bPosDone2,
+			Busy=> bPosBusy2);		
+			
+//线性轴相对定位
+	ELSIF  bRelEx THEN										
+		fbMC_MoveR(
+			Axis:= AxisRef,
+			Execute:= bMoveRelExe AND (iPosInstNum = 1), 
+			Distance:= rPosEx, 
+			Velocity:= rVelExTmp, 
+			Acceleration:= rAccEx, 
+			Deceleration:= rDecEx, 
+			Jerk:= rJerkEx, 
+			BufferMode:= MC_Aborting, 
+			Options:= ,
+			Done=> bPosDone1,
+			Busy=> bPosBusy1);	
+		fbMC_MoveR2(
+			Axis:= AxisRef, 
+			Execute:= bMoveRelExe AND (iPosInstNum = 2), 
+			Distance:= rPosEx, 
+			Velocity:= rVelExTmp, 
+			Acceleration:= rAccEx, 
+			Deceleration:= rDecEx, 
+			Jerk:= rJerkEx, 
+			BufferMode:= MC_Aborting, 
+			Options:= ,
+			Done=> bPosDone2,
+			Busy=> bPosBusy2);							 
+	END_IF
+
+	bMoveAbsExe:=FALSE;
+	bMoveRelExe:=FALSE;		
+ 
+		 
+	//定位状态更新
+	//定位完成状态
+	IF (iPosId<>-1) AND (bPosDone1 OR bPosDone2) THEN									                                             
+	 		bGo_OK := TRUE;
+			stAxis.Pos.State.bGo_Moving:=FALSE;		
+			iPosId:=-1;
+	END_IF;
+	//定位完成与位置共同判断	 
+	IF	 bRelEx THEN			 
+		stAxis.Pos.State.bGo_OK	:=  bGo_OK (*AND (ABS((rPosEx + rRelStartPos)- stAxis.State.rActPos )<= stAxis.Parameter.rInPosValue)*);
+	ELSE	
+		stAxis.Pos.State.bGo_OK	:=  bGo_OK AND (ABS(stAxis.Pos.Par.rPos - stAxis.State.rActPos )<= stAxis.Parameter.rInPosValue);
+	END_IF
+		 
+	//定位中状态
+	IF (bPosBusy1 OR bPosBusy2)  THEN																						
+	 	bGo_OK := FALSE;
+		stAxis.Pos.State.bGo_Moving:=TRUE;				
+	END_IF;
+	//未定位中，清空定位ID号
+	IF NOT bPosBusy1 AND NOT bPosBusy2 THEN  																
+		iPosId:=-1;
+	END_IF;
+	
+	//定位计时
+	TonAxisMove(IN:=(iPosId <> -1), PT:= T#9999S);
+	IF iPosId <> -1 THEN
+		stAxis.Pos.State.rGo_CT:=TIME_TO_REAL(TonAxisMove.ET)/1000.0;	
+	END_IF;	
+END_IF;
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_09_Stop" Id="{be090c12-b65b-49bb-9737-4a9ed8c39443}">
+      <Implementation>
+        <ST><![CDATA[{region "轴停止"}
+IF TRUE THEN
+	IF bHoming THEN
+		lrStopMoveDec:=stAxis.Parameter.rStopDec * 1000.0;
+	ELSE
+		lrStopMoveDec:=stAxis.Parameter.rStopDec * 1000.0;
+	END_IF;
+		
+	bStopMoveExe:= (stAxis.Control.bStop_M AND stSystem.bManual) OR stAxis.Control.bStop_A OR stSystem.bStop;
+	IF bStopMoveExe (*AND NOT bStopMoveExeLast *)THEN
+		bHomeJogBExe := FALSE ;
+		bHomeJogFExe := FALSE ;	
+		bHoming:= FALSE;
+		iHomeStep:=0;
+		iHomeStepPre := 0;
+		stAxis.Pos.State.bGo_Moving:=FALSE;
+		iPosId:=-1;
+//		uiMotionCMD:=5;
+	END_IF;
+	bStopExe:= bHomeStop OR bStopMoveExe OR stAxis.State.bError OR stSystem.bEMG ;
+	fbMcStop(
+		Axis:= AxisRef, 
+		Execute:= bStopExe  , 
+		Deceleration:= lrStopMoveDec , 
+		Jerk:= lrStopMoveDec * REAL#10.0	 , 
+		Options:= , 
+		Done=> , 
+		Busy=> , 
+		Active=> , 
+		CommandAborted=> , 
+		Error=> , 
+		ErrorID=> );
+	
+	bHomeStop:=FALSE;
+	IF stAxis.State.bStandStill AND ((stAxis.Control.bStop_M AND stSystem.bManual) OR stAxis.Control.bStop_A) THEN
+		stAxis.Control.bStop_A:=FALSE;
+		stAxis.Control.bStop_M:=FALSE;
+	END_IF;
+	bStopMoveExeLast:=bStopMoveExe;
+END_IF;
+{endregion}
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_10_TrqCtr" Id="{e8b4872e-1d13-4ecc-ab8e-691b2720facd}">
+      <Implementation>
+        <ST><![CDATA[{region "力矩切换"}
+
+// 转矩模式下，力矩切换
+// 转矩6071目标转矩的单位为 0.1% ，上位机按照百分比输出，数据转换 *10
+
+iTorqueTemp := REAL_TO_INT(stAxis.Parameter.rTorque *10)	;
+	 
+IF stAxis.State.siModeOfOperation = 10 THEN	// 驱动器处于转接模式时可设定力矩
+	fbEcCoeSdoWriteExTargetTrq(
+	sNetId:=strDriveAddressNetID , 
+	nSlaveAddr:= uiDriveAddressSlaveAddr, 
+	nSubIndex:= 16#00, 
+	nIndex:= (16#6071 + (stAxis.Parameter.uiAxisChannelNum - 1)*16#800), 
+	pSrcBuf:= ADR(iTorqueTemp), 
+	cbBufLen:= SIZEOF(iTorqueTemp), 
+	bExecute:= iTorqueTemp<> iTorqueTempOld , 
+	tTimeout:= , 
+	bCompleteAccess:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> );	 
+END_IF
+iTorqueTempOld := iTorqueTemp;
+	 
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_11_StateOut" Id="{c7cf61e8-f9f0-4fcc-b75b-e3e8514bfa60}">
+      <Implementation>
+        <ST><![CDATA[{region "状态输出"}
+//绝对值编码器电机在驱动器中设置好原点，默认原点OK
+//增量式编码器需程序回零
+IF  stAxis.Parameter.bAbsEnc AND stAxis.Control.bHome_A THEN
+	stAxis.State.bHome_OK := TRUE;
+	stAxis.Control.bHome_A:=FALSE;
+ELSE
+	stAxis.State.bHome_OK :=(AxisRef.Status.Homed OR stAxis.State.bHome_OK)
+							AND NOT AxisRef.Status.DriveDeviceError;
+	stAxis.State.bHoming :=(AxisRef.Status.Homing OR bHoming)
+							AND NOT AxisRef.Status.DriveDeviceError;
+END_IF;
+
+//模轴和线性轴当前位置输出
+stAxis.State.rActModuloPos := LREAL_TO_REAL(AxisRef.NcToPlc.ModuloActPos);
+stAxis.State.rActPos := LREAL_TO_REAL(AxisRef.NcToPlc.ActPos);
+//速度转矩加速度
+stAxis.State.rActVel :=LREAL_TO_REAL(AxisRef.NcToPlc.ActVelo);
+stAxis.State.rActTrq :=LREAL_TO_REAL(AxisRef.NcToPlc.ActTorque);
+stAxis.State.rActAcc :=LREAL_TO_REAL(AxisRef.NcToPlc.ActAcc);
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_12_Error" Id="{61b1cc4e-f89f-46e2-8796-5e51f0171fac}">
+      <Implementation>
+        <ST><![CDATA[{region "轴报警"}
+//报警复位
+IF ((stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual)) AND NOT bResetLast ) THEN
+	FOR m:=1 TO 12 BY 1 DO
+		stAxis.state.arErrorID[m]:= FALSE;
+	END_FOR;
+	stAxis.State.bWarning := FALSE;
+	stAxis.State.bLightEror := FALSE;
+	stAxis.State.bCriticalError :=FALSE;
+END_IF;
+bResetLast := stSystem.bReset;
+
+//轴报警1-轴未使能
+//屏蔽轴未使能报警
+RtrigPowerOn(CLK:=stAxis.State.bPowerOK , Q=> );
+//bHoming状态在驱动器回零时使用
+IF NOT stAxis.State.bPowerOK AND NOT bHoming AND FALSE THEN
+	stAxis.State.bLightEror := TRUE;
+	stAxis.State.arErrorID[1]:=TRUE;
+END_IF;
+(*
+IF RtrigPowerOn.Q THEN
+	stAxis.State.bLightEror:=FALSE;
+	stAxis.State.arErrorID[0]:=FALSE;
+	stAxis.State.wstrErrorInfo:="--";
+END_IF;
+*)
+	 
+//轴报警2-轴NC报警
+IF AxisRef.Status.ErrorID > 0 AND (NOT mcReset.Busy AND (NOT bHoming (*AND stAxis.Parameter.uiHomeMode <>6*))) THEN
+	stAxis.State.bCriticalError := TRUE;
+	stAxis.State.arErrorID[2]:=TRUE;
+END_IF;
+		  
+//轴报警3-驱动器报警
+TonReadDriveErrorCode(IN:=AxisRef.Status.DriveDeviceError,PT:=TIME#50MS);
+IF AxisRef.Status.DriveDeviceError AND NOT mcReset.Busy AND TonReadDriveErrorCode.Q THEN
+	stAxis.State.bCriticalError := TRUE;
+	stAxis.State.arErrorID[3]:=TRUE;
+END_IF;	 	 
+
+//轴报警4-回零条件不满足报警
+IF stAxis.Control.bHome_A AND NOT stAxis.Control.bHome_Con THEN
+	stAxis.State.bLightEror := TRUE;
+	stAxis.State.arErrorID[4]:=TRUE;
+END_IF;	 
+
+//轴报警5-正向JOG运行条件不满足报警
+IF((stAxis.Control.bJogCw_A OR (stAxis.Control.bJogCw_M AND stSystem.bManual))AND NOT stAxis.Control.bJogCw_Con) THEN 
+	stAxis.State.bLightEror := TRUE;
+	stAxis.State.arErrorID[5]:=TRUE;
+END_IF;
+
+//轴报警6-负向JOG运行条件不满足报警
+IF( (stAxis.Control.bJogCcw_A OR (stAxis.Control.bJogCcw_M AND stSystem.bManual)) AND NOT stAxis.Control.bJogCcw_Con) THEN 
+	stAxis.State.bLightEror := TRUE;
+	stAxis.State.arErrorID[6]:=TRUE;
+END_IF;
+
+//轴报警7-运行方向错误报警
+IF ((stAxis.State.bPsw AND bHomeJogFExe) OR (stAxis.State.bNSw AND bHomeJogBExe)) AND NOT (stAxis.Parameter.uiHomeMode = 6 AND iHomeStepPre > 0 AND iHomeStep<1000) THEN
+	bHomeJogFExe := FALSE;
+	bHomeJogbExe := FALSE;
+	bWrongDirection := TRUE;
+END_IF;
+IF stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual) THEN
+	bWrongDirection := FALSE;
+END_IF;
+IF bWrongDirection THEN
+	stAxis.State.bLightEror :=TRUE;
+	stAxis.State.arErrorID[7]:=TRUE;
+END_IF;
+	 		   
+//轴报警8-运行中碰正限位报警
+RtrigJogB(CLK:=bJogBExe , Q=> );
+IF (NOT stAxis.State.bPSw AND stAxis.State.bDirPositive ) AND NOT bHoming THEN 
+	stAxis.State.bCriticalError :=TRUE;
+	stAxis.State.arErrorID[8]:=TRUE;
+END_IF;
+IF RtrigJogB.Q AND stAxis.State.bPSw THEN
+	stAxis.State.bCriticalError :=FALSE;
+	stAxis.State.arErrorID[8]:=FALSE;
+END_IF
+
+// 轴报警9-运行中碰负限位报警
+RtrigJogF(CLK:=bJogFExe , Q=> );
+IF (NOT stAxis.State.bNSw AND stAxis.State.bDirNegative ) AND NOT bHoming THEN 
+	stAxis.State.bCriticalError :=TRUE;
+	stAxis.State.arErrorID[9]:=TRUE;
+END_IF;
+IF RtrigJogF.Q AND stAxis.State.bNSw THEN
+	stAxis.State.bCriticalError :=FALSE;
+	stAxis.State.arErrorID[9]:=FALSE;
+END_IF
+
+//
+stAxis.state.bError := stAxis.State.bCriticalError OR stAxis.State.bLightEror ;
+{endregion}
+
+
+//报警输出	 
+{region "SetAlarm"}
+//SetAlarm
+//轴报警从编号 101 开始, 12 个为一组
+arrfbSetAlarm[1](
+	bEnable:= TRUE, 
+	iErrorID:= 100 + (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 1, 
+	bExecute:= stAxis.State.arErrorID[1], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'not enabled', 
+	wstrErrorInfoCN:= "轴未使能", 
+	enumErrorClass:= 6, 
+	 );
+arrfbSetAlarm[2](
+	bEnable:= TRUE, 
+	iErrorID:= 100 + (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 2, 
+	bExecute:= stAxis.State.arErrorID[2], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'NC alarm', 
+	wstrErrorInfoCN:= "轴NC报警,报警代码-", 
+	enumErrorClass:= 7,
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	D1:=UDINT_TO_DINT(AxisRef.Status.ErrorID),
+	 );
+arrfbSetAlarm[3](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 3, 
+	bExecute:= stAxis.State.arErrorID[3], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'drive alarm', 
+	wstrErrorInfoCN:= "驱动器报警,报警代码-", 
+	enumErrorClass:= 7,
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	D1:=UDINT_TO_DINT(stAxis.State.uiDriveErrorCode),
+	 );
+arrfbSetAlarm[4](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 4, 
+	bExecute:= stAxis.State.arErrorID[4], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'home condition not satisfied', 
+	wstrErrorInfoCN:= "回零条件不满足", 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	enumErrorClass:= 6, 
+	 );	
+arrfbSetAlarm[5](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 5, 
+	bExecute:= stAxis.State.arErrorID[5], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'positive JOG condition not satisfied', 
+	wstrErrorInfoCN:= "正向JOG运行条件不满足", 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	enumErrorClass:= 6, 
+	 );	 
+arrfbSetAlarm[6](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 6, 
+	bExecute:= stAxis.State.arErrorID[6], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'negative JOG condition not satisfied', 
+	wstrErrorInfoCN:= "反向JOG运行条件不满足", 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	enumErrorClass:= 6, 
+	 );	 
+arrfbSetAlarm[7](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 7, 
+	bExecute:= stAxis.State.arErrorID[7], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'wrong direction of motion', 
+	wstrErrorInfoCN:= "回零过程中JOG运行方向错误", 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	enumErrorClass:= 6, 
+	 );
+arrfbSetAlarm[8](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 8, 
+	bExecute:= stAxis.State.arErrorID[8], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'positive limit alarm', 
+	wstrErrorInfoCN:=  "正限位报警", 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	enumErrorClass:= 6, 
+	 );
+arrfbSetAlarm[9](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 9 , 
+	bExecute:= stAxis.State.arErrorID[9], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'negative limit alarm', 
+	wstrErrorInfoCN:=  "负限位报警",
+	wstr1:=STRING_TO_WSTRING(stAxis.strName), 
+	enumErrorClass:= 6, 
+	 );		  
+//轴报警10
+arrfbSetAlarm[10](
+	bEnable:= TRUE, 
+	iErrorID:= 100+ (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 10, 
+	bExecute:= stAxis.State.arErrorID[10], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'homing process interruption,step:', 
+	wstrErrorInfoCN:=  "回零流程异常，步序-",	
+	enumErrorClass:= 6, 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	D1:=INT_TO_DINT(iHomeStep),
+	 );
+
+//轴报警11
+arrfbSetAlarm[11](
+	bEnable:= TRUE, 
+	iErrorID:= 100 + (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 11, 
+	bExecute:= stAxis.State.arErrorID[11], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'Positioning motion conditions are not met.', 
+	wstrErrorInfoCN:=  "定位运动条件不满足", 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	enumErrorClass:= 6, 
+	 );
+//轴报警12
+arrfbSetAlarm[12](
+	bEnable:= TRUE, 
+	iErrorID:= 100 + (UDINT_TO_INT(AxisREF.NcToPlc.AxisId)-1) * 12 + 12, 
+	bExecute:= stAxis.State.arErrorID[12], 
+	bReset:= stSystem.bReset OR stAxis.Control.bReset_A OR (stAxis.Control.bReset_M AND stSystem.bManual), 
+	strErrorInfoEN:= 'Positioning conditions not met during motion', 
+	wstrErrorInfoCN:=  "运动中定位条件不满足", 
+	wstr1:=STRING_TO_WSTRING(stAxis.strName),
+	enumErrorClass:= 6, 
+	 );
+{endregion}]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_Axis">
+      <LineId Id="77199" Count="53" />
+      <LineId Id="77285" Count="1" />
+      <LineId Id="77450" Count="0" />
+      <LineId Id="77946" Count="0" />
+      <LineId Id="77948" Count="1" />
+      <LineId Id="77964" Count="1" />
+      <LineId Id="77947" Count="0" />
+      <LineId Id="77253" Count="31" />
+      <LineId Id="5168" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_01_Init">
+      <LineId Id="2" Count="1" />
+      <LineId Id="10" Count="45" />
+      <LineId Id="58" Count="4" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="66" Count="8" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="79" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_02_StateIn">
+      <LineId Id="2" Count="35" />
+      <LineId Id="39" Count="1" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="50" Count="7" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="58" Count="13" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="72" Count="1" />
+      <LineId Id="97" Count="13" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="80" Count="10" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_03_PowerOn">
+      <LineId Id="2" Count="0" />
+      <LineId Id="31" Count="5" />
+      <LineId Id="38" Count="1" />
+      <LineId Id="42" Count="8" />
+      <LineId Id="55" Count="4" />
+      <LineId Id="132" Count="1" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="104" Count="12" />
+      <LineId Id="101" Count="0" />
+      <LineId Id="64" Count="12" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_04_Reset">
+      <LineId Id="2" Count="9" />
+      <LineId Id="13" Count="1" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_05_SetPos">
+      <LineId Id="2" Count="14" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_06_Home">
+      <LineId Id="2191" Count="0" />
+      <LineId Id="2296" Count="0" />
+      <LineId Id="3625" Count="0" />
+      <LineId Id="2299" Count="0" />
+      <LineId Id="3503" Count="0" />
+      <LineId Id="3529" Count="0" />
+      <LineId Id="3522" Count="0" />
+      <LineId Id="3524" Count="0" />
+      <LineId Id="3527" Count="1" />
+      <LineId Id="3525" Count="0" />
+      <LineId Id="3606" Count="15" />
+      <LineId Id="3605" Count="0" />
+      <LineId Id="3526" Count="0" />
+      <LineId Id="3538" Count="0" />
+      <LineId Id="3530" Count="0" />
+      <LineId Id="3532" Count="4" />
+      <LineId Id="3531" Count="0" />
+      <LineId Id="3573" Count="15" />
+      <LineId Id="3572" Count="0" />
+      <LineId Id="3504" Count="0" />
+      <LineId Id="3537" Count="0" />
+      <LineId Id="3627" Count="0" />
+      <LineId Id="3626" Count="0" />
+      <LineId Id="3539" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_07_Jog">
+      <LineId Id="2" Count="41" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_08_Move">
+      <LineId Id="204" Count="23" />
+      <LineId Id="229" Count="3" />
+      <LineId Id="377" Count="0" />
+      <LineId Id="233" Count="2" />
+      <LineId Id="237" Count="0" />
+      <LineId Id="378" Count="0" />
+      <LineId Id="238" Count="138" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_09_Stop">
+      <LineId Id="2" Count="9" />
+      <LineId Id="41" Count="1" />
+      <LineId Id="12" Count="1" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="14" Count="1" />
+      <LineId Id="17" Count="16" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="34" Count="1" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="36" Count="2" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_10_TrqCtr">
+      <LineId Id="21" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="2" Count="3" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="6" Count="14" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="22" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_11_StateOut">
+      <LineId Id="3" Count="4" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="8" Count="13" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Axis.A_12_Error">
+      <LineId Id="120" Count="12" />
+      <LineId Id="339" Count="0" />
+      <LineId Id="133" Count="83" />
+      <LineId Id="328" Count="1" />
+      <LineId Id="217" Count="2" />
+      <LineId Id="338" Count="0" />
+      <LineId Id="220" Count="37" />
+      <LineId Id="330" Count="0" />
+      <LineId Id="258" Count="8" />
+      <LineId Id="331" Count="0" />
+      <LineId Id="267" Count="8" />
+      <LineId Id="332" Count="0" />
+      <LineId Id="276" Count="8" />
+      <LineId Id="333" Count="0" />
+      <LineId Id="285" Count="8" />
+      <LineId Id="334" Count="0" />
+      <LineId Id="294" Count="8" />
+      <LineId Id="336" Count="0" />
+      <LineId Id="303" Count="22" />
+      <LineId Id="337" Count="0" />
+      <LineId Id="326" Count="1" />
+      <LineId Id="341" Count="9" />
+      <LineId Id="340" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,213 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="Pump" Id="{d99901cc-24f2-4ea9-b6c5-72656f4ae7b3}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM Pump
+VAR
+  iPumpStep   : INT := 0;  // 状态机步骤
+  rRelPos     : REAL;    // 定量容积距离  mm
+  rRelVel     : REAL;    // 流速线速度  mm/s
+  posEdgePump : R_TRIG;  // 仅保留 M21(启动) 的上升沿触发器，M26(停止) 改为直接电平判断
+	rTrigPrintStop: INT;
+	Q: INT;
+	ton01:ton;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// ==========================================
+// 1. 触发信号边缘检测
+// ==========================================
+posEdgePump(CLK := stPump.bEx_PumpTrigOn); // M21 启动信号检测
+
+// ==========================================
+// 1.5 异常中断拦截 (防漏液与防抽气保护)
+// ==========================================
+IF stIJP.bStopExe THEN
+    // 核心逻辑：只在“准备挤出”或“正在挤出”的阶段（步号 9 到 20 之间）才干预
+    IF iPumpStep >= 9 AND iPumpStep <= 20 THEN
+        
+//        // 1. 立即撤销所有可能的运动触发信号
+      arstaxis[10].Pos.Ctrl.bGo_A := FALSE;   // 撤销定量运动
+      arstaxis[10].Control.bJogCw_A := FALSE; // 撤销匀速运动
+        
+//        // 2. 向底层轴发送停止指令
+       arstaxis[10].Control.bStop_A := TRUE;
+        
+//        // 3. 强制状态机跳转到过渡状态25
+//        // (状态25会等待电机停稳，然后自动进入29执行回抽)
+        iPumpStep := 25;
+        
+//    // 如果 iPumpStep = 0 (静止状态) 
+//    // 或者 iPumpStep >= 25 (已经处于停机缓冲或回抽状态)
+//    // 则什么都不做，完美避免了闲置时抽空气的问题
+   END_IF
+END_IF
+
+// ==========================================
+// 2. 注射泵控制状态机
+// ==========================================
+CASE iPumpStep OF
+    0:  // --- 等待状态 (Idle) ---
+        // M21上升沿触发，进入流程1
+        IF posEdgePump.Q THEN
+            iPumpStep := 5;
+        END_IF
+    
+    5:  // --- 流程1准备：刷新参数并计算 ---
+        stPump.bEx_PumpTrigOn := FALSE; 					// 【防呆】阅后即焚：复位M21启动信号，防止HMI按钮卡死  
+        stPump.rJogVol_A := stPump.rVol_Process1;
+        stPump.rJogVel_A := stPump.rVel_Process1;
+        ACT_Calc();              					// 调用Action，立刻计算出 rRelPos 和 rRelVel
+        iPumpStep := 6;
+	
+    6: // --- 流程1：快速注入 (发送指令) ---
+        arstaxis[10].Pos.Par.rVel   := rRelVel;
+        arstaxis[10].Pos.Par.rPos    := rRelPos;
+        arstaxis[10].Pos.Par.bRelEnable := TRUE;         	
+		iPumpStep := 10;
+        
+    10: // --- 流程1：快速注入 (发送指令) ---   
+        arstaxis[10].Pos.Ctrl.bGo_A   := TRUE;  	// 触发运动      
+        // 等待底层确认收到指令并脱离静止状态
+        //IF arAXIS[10].Status.Moving OR NOT arAXIS[10].Status.StandStill THEN
+            iPumpStep := 11; 
+        //END_IF
+    11: // --- 流程1：快速注入 (等待完成) ---
+        // 确保到位后再进行下一步
+       // IF (NOT arAXIS[10].Status.Moving) AND (arAXIS[10].Status.StandStill) AND arAXIS[10].Status.InTargetPosition THEN
+	   IF arstaxis[10].Pos.State.bGo_OK THEN
+            arstaxis[10].Pos.Ctrl.bGo_A := FALSE; 	// 复位执行信号
+            iPumpStep := 19;                        // 无缝进入流程2准备阶段
+        END_IF
+        
+    19: // --- 流程2准备：刷新参数并计算 ---
+        stPump.rJogVel_A := stPump.rVel_Process2;      
+        ACT_Calc();              					// 立刻计算出新的连续运动速度 rRelVel
+        iPumpStep := 20;      
+        
+    20: // --- 流程2：匀速注入 (连续运动) ---
+	    arstaxis[10].Control.iJogMode:=0;
+        arstaxis[10].Parameter.rJogVel_A   := rRelVel;
+        //arstaxis[10].Parameter.uiMoveMode := 0;
+        arstaxis[10].Control.bJogCw_A     := TRUE;  // 触发连续匀速运动
+
+        // 等待 M26 信号停止流程2
+        // 【优化】直接判断电平并复位，取消上升沿依赖，防止误触漏信号
+        IF stPump.bEx_PumpTrigOff THEN
+            arstaxis[10].Control.bJogCw_A := FALSE;   // 取消匀速指令
+            arstaxis[10].Control.bStop_A  := TRUE;    // 发送轴停止指令
+            iPumpStep := 25;                        	// 进入过渡缓冲状态
+        END_IF
+
+    25: // --- 过渡状态：等待电机停稳 (安全保护) ---
+        IF arstaxis[10].State.bStandStill AND NOT arstaxis[10].State.bMoving AND NOT arAXIS[10].Status.HasJob THEN
+            arstaxis[10].Control.bStop_A := FALSE;    // 复位停止信号
+			stPump.bEx_PumpTrigOff      := FALSE;   // 【防呆】阅后即焚：复位M26停止信号
+            iPumpStep := 26;                        // 电机停稳，进入流程3准备
+        END_IF
+    26:
+       IF ton01.Q  THEN
+			iPumpStep := 27;
+		END_IF    
+    27: // --- 流程3准备：刷新参数并计算 ---
+        stPump.rJogVol_A := stPump.rVol_Process3;
+        stPump.rJogVel_A := stPump.rVel_Process3;
+        
+        ACT_Calc();              // 立刻计算出抽取参数
+        iPumpStep := 29;      
+    29:    
+        arstaxis[10].Pos.Par.rVel   := rRelVel;			// 【关键】速度必须为正
+        arstaxis[10].Pos.Par.rPos    := -rRelPos;		// 【关键】位移取负，实现反转抽取
+        arstaxis[10].Pos.Par.bRelEnable := TRUE;  
+       iPumpStep := 30; 
+    30: // --- 流程3：快速抽取 (定量) ---
+
+        arstaxis[10].Pos.Ctrl.bGo_A   := TRUE;  		// 触发运动
+         
+        //IF arAXIS[10].Status.Moving OR NOT arAXIS[10].Status.StandStill THEN
+            iPumpStep := 31;
+        //END_IF
+    31: 
+        IF ton01.Q  THEN
+			iPumpStep := 32;
+		END_IF
+    32: // --- 流程3：快速抽取 (等待完成) ---
+       // IF (NOT arAXIS[10].Status.Moving) AND (arAXIS[10].Status.StandStill) (*AND arAXIS[10].Status.InTargetPosition*) THEN
+		IF	arstaxis[10].Pos.State.bGo_OK THEN
+            arstaxis[10].Pos.Ctrl.bGo_A   := FALSE;     // 复位执行信号
+            iPumpStep := 0;                             // 整个流程结束，回到待机状态
+        END_IF
+                         
+END_CASE;
+ton01(IN:=(iPumpStep=31) OR (iPumpStep=26) , PT:=T#50MS , Q=> , ET=> ); 
+// ==========================================
+// 3. 状态反馈给上位机 (放在最底部)
+// ==========================================
+stPump.iCurrentStep := iPumpStep;]]></ST>
+    </Implementation>
+    <Action Name="ACT_Calc" Id="{38307def-642d-4fb5-bb5d-06e40bd5ec31}">
+      <Implementation>
+        <ST><![CDATA[// ==========================================
+// Action: ACT_Calc (容积转运动距离与速度)
+// ==========================================
+IF stPump.strml='2.5ml' THEN
+    rRelPos := stPump.rJogVol_A / ((stPump.rInjectDia[1]/2)*(stPump.rInjectDia[1]/2)*3.1415926);
+    rRelVel := stPump.rJogVel_A / 60 / ((stPump.rInjectDia[1]/2)*(stPump.rInjectDia[1]/2)*3.1415926);
+ELSIF stPump.strml='5ml' THEN
+    rRelPos := stPump.rJogVol_A / ((stPump.rInjectDia[2]/2)*(stPump.rInjectDia[2]/2)*3.1415926);
+    rRelVel := stPump.rJogVel_A / 60 / ((stPump.rInjectDia[2]/2)*(stPump.rInjectDia[2]/2)*3.1415926);
+//ELSIF stPump.strml='10ml' THEN
+//    rRelPos := stPump.rJogVol_A / ((stPump.rInjectDia[3]/2)*(stPump.rInjectDia[3]/2)*3.1415926);
+//    rRelVel := stPump.rJogVel_A / 60 / ((stPump.rInjectDia[3]/2)*(stPump.rInjectDia[3]/2)*3.1415926);
+//ELSIF stPump.strml='30ml' THEN
+//    rRelPos := stPump.rJogVol_A / ((stPump.rInjectDia[4]/2)*(stPump.rInjectDia[4]/2)*3.1415926);
+//    rRelVel := stPump.rJogVel_A / 60 / ((stPump.rInjectDia[4]/2)*(stPump.rInjectDia[4]/2)*3.1415926);
+END_IF]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="Pump">
+      <LineId Id="3" Count="3" />
+      <LineId Id="121" Count="22" />
+      <LineId Id="120" Count="0" />
+      <LineId Id="7" Count="12" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="167" Count="0" />
+      <LineId Id="170" Count="3" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="26" Count="1" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="34" Count="3" />
+      <LineId Id="39" Count="2" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="42" Count="5" />
+      <LineId Id="49" Count="3" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="53" Count="2" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="57" Count="13" />
+      <LineId Id="178" Count="0" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="179" Count="0" />
+      <LineId Id="71" Count="7" />
+      <LineId Id="175" Count="1" />
+      <LineId Id="174" Count="0" />
+      <LineId Id="177" Count="0" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="86" Count="3" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="156" Count="1" />
+      <LineId Id="90" Count="1" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="92" Count="8" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+    <LineIds Name="Pump.ACT_Calc">
+      <LineId Id="2" Count="14" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_HistoryError" Id="{e001ec5a-2023-4ebc-8eb0-69ba1ddb39ac}">
+    <Declaration><![CDATA[TYPE ST_HistoryError :
+STRUCT
+  	wstrErrorMessage				:            	WSTRING					;	//报警信息
+	iErrorID						:				INT						;	//报警ID号
+   	dtErrorTime						:               DT						;	//报警发生时间
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

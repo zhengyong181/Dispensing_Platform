@@ -1,0 +1,485 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_PDMSCtr" Id="{da2b6159-0036-47dc-9e17-680100543f73}" SpecialFunc="None">
+    <Declaration><![CDATA[// 主功能块定义：PDMS光源控制器
+FUNCTION_BLOCK FB_PDMSCtr
+// 输入输出参数：灯光控制结构体（双向传递）
+VAR_IN_OUT
+    stLightCtr: ST_LightCtr;  // 4个通道亮度的设定值和实际亮度值
+END_VAR
+
+VAR_INPUT
+	  // EtherCAT模块网络标识（设备地址）
+    strNetID: STRING;     // 模块的NetID地址字符串
+    // 模块从站地址（设备编号）
+    uiSlaveAddr: UINT;    // 从站地址（无符号整数）
+    // COM口功能索引号（对象字典索引）
+    wIndex: WORD;         // CoE通信索引号（字类型）
+//	// 通讯参数设置触发，上升沿有效
+//	bCommParaSetExe: BOOL;
+//	// 波特率设定，默认设定7-19200。
+//	// 对应关系：1-300；2-600；3-1200；4-2400；5-4800；6-9600；7-19200；8-38400；9-57600；10-115200
+//	siBaudrateSet: SINT := 7;
+//	// 传输格式设定， 默认设定3-8N1。
+//	// 对应关系：1-7E1；2-7O1；3-8N1；4-8E1；5-8O1；8-7N2；9-7E2；10-7O2；11-8N2；12-8E2；13-8O2。
+//	siDataFrameSet: SINT := 3;
+//	// RTS/CTS功能设定。默认设定0 - 关闭。
+//	// 对应关系：0-关闭；1-打开。
+//	siRTSCTSStateSet: SINT := 0;
+END_VAR
+// 输出参数：通信状态信息
+VAR_OUTPUT
+    // 当前端口通讯参数描述（宽字符串输出）
+    wstrCommPara: WSTRING;  // 显示波特率、数据格式等通信参数
+END_VAR
+
+// 局部变量声明区域
+VAR
+    // 运行状态标志
+    bFirstRun: BOOL;        // 首次运行标志（TRUE表示第一次运行）
+    Ton0: TON;              // 初始化定时器（用于首次运行延时）
+    TonWrite: TON;          // 数据写入定时器（控制发送时序）
+    TonWriteQ:BOOL;         // 写入定时器状态标志
+    bFirstTrig: BOOL;       // 首次触发标志（用于初始化操作）
+    
+    // 定时闪烁功能块（生成周期脉冲）
+    fbBlink1s: BLINK;       // 1秒闪烁器（用于周期触发读取操作）
+   
+    // 变化检测功能块
+    rtrigChanIntensityChg: R_TRIG;      // 上升沿检测器（检测亮度变化）
+    
+    // 通信时序控制定时器
+    Ton10: TON;             // 10ms定时器（用于步骤10的超时控制）
+    Ton20: TON;             // 20ms定时器（用于步骤20的超时控制）
+    
+    // 状态机控制变量
+    iStep: INT := 100;      // 状态机步骤计数器（初始值100）
+    
+    // 数据帧缓冲区
+    arSendData: ARRAY[0..16] OF BYTE := [16#40, 16#0E ,16#01, 16#0, 16#1A, 16#0, 0, 16#1A, 16#1, 0, 16#1A, 16#2, 0, 16#1A, 16#3, 0, 0];  // 设置命令数据帧
+    fbSendData: SendData;   // 数据发送功能块实例
+    
+    // 读取命令数据帧 
+    fbSendData2: SendData;  // 读取数据发送功能块实例
+    arSendData2: ARRAY[0..6] OF BYTE := [16#40, 16#4, 16#1, 16#0, 16#31, 16#FF, 16#75];  // 读取命令数据帧
+    
+    // 数据帧起始和结束标志
+    byStart: BYTE := 16#40;  // 数据帧起始字节（0x40）
+    byEnd: BYTE := 16#B9;    // 数据帧结束字节（0xB9）
+    
+    // 接收数据缓冲区
+    arReceiveData: ARRAY[0..16] OF BYTE;  // 接收数据存储数组
+    fbReceiveData: ReceiveData;           // 数据接收功能块实例
+    
+    // 串口通信控制功能块
+    fbSerialLineControl: SerialLineControl;  // 串行线路控制功能块
+    
+    // 硬件映射（连接到实际的I/O模块）
+    COMin_MASTER AT %I*: EL6inData22B;    // 主站输入数据缓冲区（映射到实际输入地址）
+    COMout_MASTER AT %Q*: EL6outData22B;  // 主站输出数据缓冲区（映射到实际输出地址）
+    
+    // 通信缓冲区
+    RxBuffer_MASTER: ComBuffer;  // 接收缓冲区（存储接收到的数据）
+    TxBuffer_MASTER: ComBuffer;  // 发送缓冲区（存储要发送的数据）
+    
+    // 亮度变化执行标志
+    bChanIntensityChgExe: BOOL;  // 通道亮度变化执行标志（TRUE需要更新亮度）
+    
+    // 校验码计算变量
+    crc:UINT;    // 校验和计算变量（无符号整数）
+    i:UINT;      // 循环计数器（用于校验计算）
+    arReceiveDatatemp:UINT;  // 接收数据临时变量
+	
+	 
+    // CoE通信功能块（用于读取串口参数）
+    fbCoEReadBaudrate: FB_EcCoESdoRead;     // 读取波特率功能块
+    fbCoEReadDataFrame: FB_EcCoESdoRead;    // 读取数据格式功能块
+    fbCoEReadRTSCTSState: FB_EcCoESdoRead;  // 读取流控状态功能块
+    
+    // CoE通信功能块（用于设置串口参数）
+    fbCoEWriteBaudrate: FB_EcCoESdoWrite;    // 写入波特率功能块
+    fbCoEWriteDataFrame: FB_EcCoESdoWrite;   // 写入数据格式功能块
+    fbCoeWriteRTSCTSState: FB_EcCoESdoWrite; // 写入流控状态功能块
+    
+    // 临时变量用于存储读取的通信参数
+    siBaudrateReadTemp: SINT;           // 临时存储读取的波特率值
+    wstrBaudrateRead: WSTRING;          // 波特率描述字符串
+    siDataFrameReadTemp: SINT;          // 临时存储读取的数据格式值
+    wstrDataFrameRead: WSTRING;         // 数据格式描述字符串
+    siRTSCTSStateReadTemp: SINT;        // 临时存储读取的流控状态值
+    wstrRTSCTSStateRead: WSTRING;       // 流控状态描述字符串
+    wstrCommParaTemp: WSTRING;          // 临时通信参数字符串
+    
+    
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(****
+		使用串口控制模块-EL6002控制Wordop-PDMS-4输出紧凑型光源控制器
+		
+		2024-1-4  1-设置并输出通讯速率/格式更换
+							2-设置四通道光源亮度参数，并读出
+							3-判定设定值与当前值不同，自动更改
+***)
+// 首次运行初始化处理
+IF bFirstRun THEN
+    bFirstTrig := TRUE;          // 设置首次触发标志为TRUE
+    Ton0(IN := bFirstRun, PT := TIME#10MS, Q => , ET => );  // 启动10ms定时器
+    IF Ton0.Q THEN               // 如果定时器到时 
+        bFirstTrig := FALSE;     // 清除首次触发标志
+        bFirstRun := FALSE;      // 清除首次运行标志（后续不再进入此分支）
+    END_IF    
+END_IF
+
+(*
+{region"通讯参数设定"}
+//通讯速率、通讯格式读取
+fbBlink1s(ENABLE:=TRUE , TIMELOW:=TIME#1S , TIMEHIGH:=TIME#1S , OUT=> );
+
+fbCoEReadBaudrate(
+	sNetId:=strNetID , 
+	nSlaveAddr:=uiSlaveAddr , 
+	nSubIndex:=16#11 , 
+	nIndex:=wIndex , 
+	pDstBuf:=ADR(siBaudrateReadTemp) , 
+	cbBufLen:=SIZEOF(siBaudrateReadTemp) , 
+	bExecute:=fbBlink1s.OUT , 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> , 
+	cbRead=> );
+	
+fbCoEReadDataFrame(
+	sNetId:=strNetID , 
+	nSlaveAddr:=uiSlaveAddr , 
+	nSubIndex:= 16#15, 
+	nIndex:= wIndex, 
+	pDstBuf:=ADR(siDataFrameReadTemp)  , 
+	cbBufLen:=SIZEOF(siDataFrameReadTemp) , 
+	bExecute:=fbBlink1s.OUT , 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> , 
+	cbRead=> );
+
+fbCoEReadRTSCTSState(
+	sNetId:=strNetID , 
+	nSlaveAddr:=uiSlaveAddr , 
+	nSubIndex:=16#01 , 
+	nIndex:=wIndex , 
+	pDstBuf:= ADR(siRTSCTSStateReadTemp), 
+	cbBufLen:=SIZEOF(siRTSCTSStateReadTemp) , 
+	bExecute:=fbBlink1s.OUT , 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> , 
+	cbRead=> );
+	
+CASE siBaudrateReadTemp OF 
+	1:
+		wstrBaudrateRead := "当前波特率：300，";
+	2:
+		wstrBaudrateRead := "当前波特率：600，";
+	3:
+		wstrBaudrateRead := "当前波特率：1200，";
+	4:
+		wstrBaudrateRead := "当前波特率：2400，";
+	5:
+		wstrBaudrateRead := "当前波特率：4800，";
+	6:
+		wstrBaudrateRead := "当前波特率：9600，";
+	7:
+		wstrBaudrateRead := "当前波特率：19200，";
+	8:
+		wstrBaudrateRead := "当前波特率：38400，";
+	9:
+		wstrBaudrateRead := "当前波特率：57600，";
+	10:
+		wstrBaudrateRead := "当前波特率：115200，";	
+END_CASE
+
+CASE siDataFrameReadTemp OF 
+	1:
+		wstrDataFrameRead:= "当前传输格式：7E1，数据位7，停止位1，偶校验，";
+	2:
+		wstrDataFrameRead:= "当前传输格式：7O1，数据位7，停止位1，奇校验，"	;
+	3:
+		wstrDataFrameRead:= "当前传输格式：8N1，数据位8，停止位1，无校验，"	;
+	4:
+		wstrDataFrameRead:= "当前传输格式：8E1，数据位8，停止位1，偶校验，"	;
+	5:
+		wstrDataFrameRead:= "当前传输格式：8O1，数据位8，停止位1，奇校验，"	;
+	8:
+		wstrDataFrameRead:= "当前传输格式：7N2，数据位7，停止位2，无校验，"	;
+	9:
+		wstrDataFrameRead:= "当前传输格式：7E2，数据位7，停止位2，偶校验，"	;
+	10:
+		wstrDataFrameRead:= "当前传输格式：7O2，数据位7，停止位2，奇校验，"	;
+	11:
+		wstrDataFrameRead:= "当前传输格式：8N2，数据位8，停止位2，无校验，"	;
+	12:
+		wstrDataFrameRead:= "当前传输格式：8E2，数据位8，停止位2，偶校验，"	;
+	13:
+		wstrDataFrameRead:= "当前传输格式：8O2，数据位8，停止位2，奇校验，"	;
+	
+END_CASE;
+
+CASE siRTSCTSStateReadTemp OF 
+	0:
+		wstrRTSCTSStateRead:="串口流控未开启";
+	1:
+		wstrRTSCTSStateRead:="串口流控已开启";	
+END_CASE;
+
+wstrCommParaTemp := WCONCAT(STR1:=wstrBaudrateRead,STR2:=wstrDataFrameRead);
+wstrCommPara:=WCONCAT(STR1:=wstrCommParaTemp,STR2:=wstrRTSCTSStateRead);
+//通讯速率、通讯格式更改
+
+fbCoEWriteBaudrate(
+	sNetId:=strNetID , 
+	nSlaveAddr:=uiSlaveAddr, 
+	nSubIndex:=16#11 , 
+	nIndex:=wIndex , 
+	pSrcBuf:=ADR(siBaudrateSet) , 
+	cbBufLen:=SIZEOF(siBaudrateSet) , 
+	bExecute:=bCommParaSetExe OR bFirstTrig, 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> );
+
+fbCoEWriteDataFrame(
+	sNetId:=strNetID , 
+	nSlaveAddr:=uiSlaveAddr , 
+	nSubIndex:=16#15 , 
+	nIndex:=wIndex , 
+	pSrcBuf:=ADR(siDataFrameSet) , 
+	cbBufLen:=SIZEOF(siDataFrameSet) , 
+	bExecute:=bCommParaSetExe OR bFirstTrig, 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> );
+
+fbCoeWriteRTSCTSState(
+	sNetId:=strNetID  , 
+	nSlaveAddr:=uiSlaveAddr , 
+	nSubIndex:=16#01 , 
+	nIndex:=wIndex , 
+	pSrcBuf:=ADR(siRTSCTSStateSet)  , 
+	cbBufLen:= SIZEOF(siRTSCTSStateSet), 
+	bExecute:=bCommParaSetExe OR bFirstTrig , 
+	tTimeout:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> );
+		 
+{endregion}
+*)	 
+
+{region"通道光源值写入与读取"}	 
+//写入值判定
+// 通道1亮度值范围限制（保护逻辑）
+IF stLightCtr.iChannel1ValueSet < 0 THEN          // 如果设定值小于0
+    stLightCtr.iChannel1ValueSet := 0;            // 强制设为最小值0
+ELSIF stLightCtr.iChannel1ValueSet > 255 THEN    // 如果设定值大于
+    stLightCtr.iChannel1ValueSet := 255;          // 强制设为最大值
+END_IF;
+	 
+// 通道2亮度值范围限制
+IF stLightCtr.iChannel2ValueSet < 0 THEN          // 如果设定值小于0
+    stLightCtr.iChannel2ValueSet := 0;            // 强制设为最小值0
+ELSIF stLightCtr.iChannel2ValueSet > 255 THEN    // 如果设定值大于
+    stLightCtr.iChannel2ValueSet := 255;          // 强制设为最大值
+END_IF;
+	 
+// 通道3亮度值范围限制
+IF stLightCtr.iChannel3ValueSet < 0 THEN          // 如果设定值小于0
+    stLightCtr.iChannel3ValueSet := 0;            // 强制设为最小值0
+ELSIF stLightCtr.iChannel3ValueSet > 255 THEN    // 如果设定值大于
+    stLightCtr.iChannel3ValueSet := 255;          // 强制设为最大值
+END_IF;
+
+// 通道4亮度值范围限制
+IF stLightCtr.iChannel4ValueSet < 0 THEN          // 如果设定值小于0
+    stLightCtr.iChannel4ValueSet := 0;            // 强制设为最小值0
+ELSIF stLightCtr.iChannel4ValueSet > 255 THEN    // 如果设定值大于
+    stLightCtr.iChannel4ValueSet := 255;          // 强制设为最大值
+END_IF;
+
+//通道参数值写入传输数组中	 
+// 将通道1亮度值写入发送数据帧（16位值拆分为2个字节）
+//arSendData[6] := UINT_TO_BYTE(SHR(stLightCtr.iChannel1ValueSet, 8));  // 高8位（右移8位取高字节）
+arSendData[6] := UINT_TO_BYTE(stLightCtr.iChannel1ValueSet);          // 低8位（直接转换取低字节）
+	 
+// 将通道2亮度值写入发送数据帧
+//arSendData[10] := UINT_TO_BYTE(SHR(stLightCtr.iChannel2ValueSet, 8));  // 高8位
+arSendData[9] := UINT_TO_BYTE(stLightCtr.iChannel2ValueSet);          // 低8位
+	 
+// 将通道3亮度值写入发送数据帧
+// arSendData[14] := UINT_TO_BYTE(SHR(stLightCtr.iChannel3ValueSet, 8));  // 高8位
+arSendData[12] := UINT_TO_BYTE(stLightCtr.iChannel3ValueSet);          // 低8位
+	 
+// 将通道4亮度值写入发送数据帧
+// arSendData[18] := UINT_TO_BYTE(SHR(stLightCtr.iChannel4ValueSet, 8));  // 高8位
+arSendData[15] := UINT_TO_BYTE(stLightCtr.iChannel4ValueSet);          // 低8位 
+	 
+//校验码计算
+//arSendData[20]:=(16#FF AND (16#BD +arSendData[6]+arSendData[7]+arSendData[10]+arSendData[11]
+//                            +arSendData[14]+arSendData[15] +arSendData[18]+arSendData[19]));
+	 
+		  
+// 计算数据帧校验码（累加和校验）
+crc := 0;                            // 初始化校验和为0
+FOR i := 0 TO 15 BY 1 DO             //  循环遍历前16个字节（0-15）
+    crc := arSendData[i] + crc;      // 累加每个字节的值
+END_FOR
+// 取累加和的低8位作为校验码，放入数据帧最后一个位置
+arSendData[16] := UINT_TO_BYTE(crc AND 16#FF);  // 与0xFF进行与操作取低8位
+	 
+		  
+//任一通道值改变触发通讯
+//TonWrite(IN:=NOT TonWrite.Q , PT:=TIME#200MS , Q=> , ET=> );
+//IF TonWrite.Q THEN
+	 
+// 检测是否需要更新亮度（比较设定值与实际值）
+IF stLightCtr.iChannel1ValueSet <> stLightCtr.iChannel1ActValue  // 通道1值变化
+    OR stLightCtr.iChannel2ValueSet <> stLightCtr.iChannel2ActValue  // 通道2值变化
+    OR stLightCtr.iChannel3ValueSet <> stLightCtr.iChannel3ActValue  // 通道3值变化
+    OR stLightCtr.iChannel4ValueSet <> stLightCtr.iChannel4ActValue THEN  // 通道4值变化
+    // 如果有任何一个通道的值发生变化
+    bChanIntensityChgExe := TRUE;  // 设置亮度变化执行标志为TRUE（需要更新）
+ 
+// 如果所有通道的设定值都与实际值匹配
+ELSIF stLightCtr.iChannel1ValueSet = stLightCtr.iChannel1ActValue  // 通道1值匹配
+    AND stLightCtr.iChannel2ValueSet = stLightCtr.iChannel2ActValue  // 通道2值匹配
+    AND stLightCtr.iChannel3ValueSet = stLightCtr.iChannel3ActValue  // 通道3值匹配
+    AND stLightCtr.iChannel4ValueSet = stLightCtr.iChannel4ActValue THEN  // 通道4值匹配
+    // 所有值都匹配，无需更新
+    bChanIntensityChgExe := FALSE;  // 设置亮度变化执行标志为FALSE（无需更新）
+END_IF
+
+//END_IF
+//上升沿触发	 
+// 配置200ms周期闪烁器（用于控制通信触发频率）
+fbBlink1s(ENABLE := TRUE, TIMELOW := TIME#500MS, TIMEHIGH := TIME#500mS, OUT => );	 
+
+// 检测亮度变化的上升沿（当变化标志从FALSE变为TRUE时触发）
+rtrigChanIntensityChg(CLK := bChanIntensityChgExe AND fbBlink1s.OUT, Q => );	
+
+// 如果检测到亮度变化的上升沿
+IF rtrigChanIntensityChg.Q THEN
+    iStep := 0;  // 重置状态机步骤为0（开始通信序列）
+END_IF
+
+
+// 配置步骤10的10ms超时定时器
+Ton10(IN := iStep = 10, PT := TIME#10MS, Q => , ET => );
+// 配置步骤20的20ms超时定时器
+Ton20(IN := iStep = 20, PT := TIME#20MS, Q => , ET => );
+
+// 状态机：控制通信流程的步骤
+CASE iStep OF 
+    0:  // 步骤0：初始化步骤
+       iStep := 10;  // 直接跳转到步骤10（开始发送设置命令）
+    
+    10:  // 步骤10：发送设置命令
+        // 调用发送功能块发送设置亮度数据帧
+        fbSendData(
+            pSendData := ADR(arSendData),           // 设置命令数据帧地址
+            Length := SIZEOF(arSendData),           // 数据帧长度（字节数）
+            Busy => ,                               // 输出：发送忙状态
+            Error => ,                              // 输出：发送错误状态
+            TXbuffer := TxBuffer_MASTER );          // 使用主站发送缓冲区
+        
+        // 如果10ms定时器到时且发送功能块不忙（发送完成）
+        IF Ton10.Q AND NOT fbSendData.Busy THEN
+          iStep := 20;  // 进入步骤20（发送读取命令）
+        END_IF;        
+        
+    20:  // 步骤20：发送读取命令
+        // 调用发送功能块发送读取亮度数据帧
+        fbSendData2(
+            pSendData := ADR(arSendData2),          // 读取命令数据帧地址
+            Length := SIZEOF(arSendData2),          // 数据帧长度（字节数）
+            Busy => ,                               // 输出：发送忙状态
+            Error => ,                              // 输出：发送错误状态
+            TXbuffer := TxBuffer_MASTER);           // 使用主站发送缓冲区
+        
+        // 如果20ms定时器到时且发送功能块不忙（发送完成）
+        IF Ton20.Q AND NOT fbSendData2.Busy THEN
+            iStep := 30;  // 进入步骤30（等待接收数据）
+        END_IF;                
+    30:
+		 stLightCtr.iChannel1ActValue :=    (BYTE_TO_UINT(arReceiveData[5]));      // 或操作合并低字节
+	 
+       // 解析接收到的通道2亮度值
+        stLightCtr.iChannel2ActValue :=  (BYTE_TO_UINT(arReceiveData[6]));      // 或操作合并低字节
+	 
+      // 解析接收到的通道3亮度值
+      stLightCtr.iChannel3ActValue :=  (BYTE_TO_UINT(arReceiveData[7]));     // 或操作合并低字节
+	 
+     // 解析接收到的通道4亮度值
+      stLightCtr.iChannel4ActValue := (BYTE_TO_UINT(arReceiveData[8]));     // 或操作合并低字节 
+	  iStep:=40;
+    // 步骤30：接收数据（隐含状态，由下面的接收功能块处理）
+END_CASE
+
+// 配置数据接收功能块（等待接收返回数据）
+fbReceiveData(
+    pPrefix := ADR(byStart),            // 数据帧前缀（起始字节0x40的地址）
+    LenPrefix := 1,                     // 前缀长度（1字节）
+    pSuffix := ,                        // 数据帧后缀
+    LenSuffix := ,                      // 后缀长度
+    pReceiveData := ADR(arReceiveData), // 接收数据缓冲区地址
+    SizeReceiveData := SIZEOF(arReceiveData),  // 接收缓冲区大小
+    Timeout := ,                        // 超时时间
+    Reset := ,                          // 复位信号
+    DataReceived => ,                   // 输出：数据接收完成标志
+    busy => ,                           // 输出：接收忙状态
+    Error => ,                          // 输出：接收错误状态
+    RxTimeout => ,                      // 输出：接收超时标志
+    LenReceiveData => ,                 // 输出：实际接收数据长度
+    RXbuffer := RxBuffer_MASTER);       // 使用主站接收缓冲区
+
+// 调用串口通信控制功能块（管理底层硬件通信）
+fbSerialLineControl(
+    Mode := SERIALLINEMODE_EL6_22B,     // 设置通信模式为EL6 22字节模式
+    pComIn := ADR(COMin_MASTER),        // 输入缓冲区地址（硬件映射）
+    pComOut := ADR(COMout_MASTER),      // 输出缓冲区地址（硬件映射）
+    SizeComIn := UINT_TO_INT(SIZEOF(COMin_MASTER)),  // 输入缓冲区大小
+    Error => ,                          // 输出：通信错误标志
+    ErrorID => ,                        // 输出：错误代码
+    TxBuffer := TxBuffer_MASTER,        // 发送缓冲区
+    RxBuffer := RxBuffer_MASTER );      // 接收缓冲区
+
+// 解析接收到的通道1亮度值（2个字节合并为16位整数）
+//	 IF(iStep=30) THEN
+//	   stLightCtr.iChannel1ActValue :=    (BYTE_TO_UINT(arReceiveData[5]));      // 或操作合并低字节
+	 
+//       // 解析接收到的通道2亮度值
+//        stLightCtr.iChannel2ActValue :=  (BYTE_TO_UINT(arReceiveData[6]));      // 或操作合并低字节
+	 
+//      // 解析接收到的通道3亮度值
+//      stLightCtr.iChannel3ActValue :=  (BYTE_TO_UINT(arReceiveData[7]));     // 或操作合并低字节
+	 
+//     // 解析接收到的通道4亮度值
+//      stLightCtr.iChannel4ActValue := (BYTE_TO_UINT(arReceiveData[8]));     // 或操作合并低字节 
+//  END_IF
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_PDMSCtr">
+      <LineId Id="12203" Count="299" />
+      <LineId Id="12671" Count="8" />
+      <LineId Id="12670" Count="0" />
+      <LineId Id="12680" Count="0" />
+      <LineId Id="12503" Count="31" />
+      <LineId Id="12658" Count="0" />
+      <LineId Id="12661" Count="8" />
+      <LineId Id="12659" Count="1" />
+      <LineId Id="12547" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

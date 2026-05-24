@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_VacuumControl" Id="{cb3caaf5-3f7e-46c9-abd0-f809548c5956}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_VacuumControl
+
+
+VAR_INPUT
+    bVacuumReq      : BOOL;      // 抽真空请求
+    bReleaseReq     : BOOL;      // 破真空请求
+    bVacuumOk       : BOOL;      // 真空到位信号
+    bResetAlarm     : BOOL;      // 报警复位
+END_VAR
+
+VAR_OUTPUT
+    qVacuumValve    : BOOL;      // 真空阀输出
+    qReleaseValve   : BOOL;      // 破真空阀输出
+    bVacuumDone     : BOOL;      // 吸附完成
+    bReleaseDone    : BOOL;      // 破真空完成
+    bAlarm          : BOOL;      // 报警
+END_VAR
+
+VAR
+    tVacuumTimer    : TON;       // 吸附超时定时器
+    tReleaseTimer   : TON;       // 破真空定时器
+
+    tMaxVacuumTime  : TIME := T#3S;      // 吸附超时
+    tReleaseTime    : TIME := T#500MS;   // 破真空时间
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// ===============================
+// 1️⃣ 抽真空控制
+// ===============================
+
+qVacuumValve := bVacuumReq AND NOT bReleaseReq;
+
+// 真空完成判断
+bVacuumDone := bVacuumOk;
+
+
+// 吸附超时检测
+tVacuumTimer(
+    IN := bVacuumReq AND NOT bVacuumOk,
+    PT := tMaxVacuumTime
+);
+
+IF tVacuumTimer.Q THEN
+    bAlarm := TRUE;
+END_IF;
+
+
+// ===============================
+// 2️⃣ 破真空控制（定时自动关闭）
+// ===============================
+tReleaseTimer(
+    IN := bReleaseReq,
+    PT := tReleaseTime
+);
+
+// 破真空输出控制
+qReleaseValve := bReleaseReq;
+
+
+// 破真空完成判断
+IF tReleaseTimer.Q THEN
+    bReleaseDone := TRUE;
+END_IF;
+
+
+// 请求撤销自动复位完成信号
+IF NOT bReleaseReq THEN
+    bReleaseDone := FALSE;
+END_IF;
+
+// ===============================
+// 3️⃣ 报警复位
+// ===============================
+
+IF bResetAlarm THEN
+    bAlarm := FALSE;
+END_IF;]]></ST>
+    </Implementation>
+    <LineIds Name="FB_VacuumControl">
+      <LineId Id="634" Count="23" />
+      <LineId Id="685" Count="17" />
+      <LineId Id="677" Count="7" />
+      <LineId Id="390" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

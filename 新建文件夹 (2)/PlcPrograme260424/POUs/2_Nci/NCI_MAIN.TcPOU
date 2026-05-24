@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="NCI_MAIN" Id="{a95bee17-80a9-4312-9da1-6ab30ca06490}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM NCI_MAIN
+VAR 
+ fbNci:FB_01_NCI;
+ fbFalling :ARRAY[1..5] OF F_TRIG;
+ fbRising  :ARRAY[1..5] OF R_TRIG;
+ bEl5131_TrigH: BOOL;
+ bEl5131_Trig : BOOL;
+ bEl5131_TrigPressure: BOOL;
+ tonWriteR:ARRAY [1..5] OF TON;
+ bEl5131_ON :BOOL;
+ stepWriteR:INT;
+ 
+	tehn: INT;
+END_VAR
+VAR_IN_OUT
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*****************************************************************  
+1.	out_stItpToPlc关联Channel2-inputs-FromPlc
+    in_stItpToPlc 关联Channel2-output=ToPlc
+2.  触发关联IO stIJP.bEx_TrigH/stIJP.bEx_Trig
+*****************************************************************)
+//底部真空破坏阀
+IF Com_GVLS.bPlatformVacON THEN
+	Y000002:=TRUE;
+	Y000003:=FALSE;
+END_IF
+
+IF Com_GVLS.bPlatformVacOff THEN
+	Y000002:=FALSE;
+	Y000003:=TRUE;
+END_IF
+
+Y000001:=stIJP.bEx_TrigH OR bEl5131_TrigH  ;
+Y000016:=(stIJP.bEx_Trig OR bEl5131_Trig )AND NOT stSystem.arErrorID[16];
+stIJP.bEx_TrigHfb:=stIJP.bEx_TrigH OR bEl5131_TrigH ;
+
+stIJP.bEx_Trigfb:=(stIJP.bEx_Trig OR bEl5131_Trig )AND NOT stSystem.arErrorID[16];
+stIJP.bEx_TrigHfb:=stIJP.bEx_TrigH (*OR stIJP.bEl5131_Trig[1] OR stIJP_ZR.bEl5131_Trig *)(*AND  stSystem.arErrorID[15] AND   stSystem.arErrorID[16]
+                      *)AND  stSystem.arErrorID[16];
+stIJP.bEx_Trigfb:=(stIJP.bEx_Trig (*OR stIJP.bEl5131_Trig[1] OR stIJP_ZR.bEl5131_Trig *))(*AND  stSystem.arErrorID[15] AND   stSystem.arErrorID[16]
+                      *)AND  stSystem.arErrorID[16];
+					  
+fbNci(
+	stfbIJP:= stIJP, 
+	in_stItpToPlc:= stIJP.in_stItpToPlc, 
+	out_stItpToPlc:= stIJP.out_stItpToPlc, 
+	nXAxisId:= arAXIS[1].NcToPlc.AxisId, 
+	nYAxisId:= arAXIS[2].NcToPlc.AxisId, 
+	nZAxisId:= arAXIS[4].NcToPlc.AxisId, 
+	nQ1AxisId:= 0, 
+	nQ2AxisId:= 0, 
+	nChannelid:= stIJP.in_stItpToPlc.ChnId, 
+	bProhibitMvALM:= );
+
+IF stIJP.bStopExe THEN
+   stIJP.bEx_TrigEl5131:=FALSE;
+END_IF
+
+// NCI报错监控 (error140-149)
+stSystem.arErrorID[140+UDINT_TO_INT(stIJP.udiError)]:=stIJP.bError;
+
+]]></ST>
+    </Implementation>
+    <Action Name="ACTNCIDispenser" Id="{6edf09c0-be99-437a-b9bd-38bbd4dba5cc}">
+      <Implementation>
+        <ST><![CDATA[stIJP.strPRGName:=' 点胶XYZ插补';
+stIJP.lrOverrideSet:=100;
+(* IO关联*)
+// NC:=stIJP.bEx_Trig;
+stIJP.iJetOnDelay:=1;]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="NCI_MAIN">
+      <LineId Id="276" Count="0" />
+      <LineId Id="301" Count="0" />
+      <LineId Id="305" Count="0" />
+      <LineId Id="304" Count="0" />
+      <LineId Id="273" Count="0" />
+      <LineId Id="357" Count="0" />
+      <LineId Id="336" Count="1" />
+      <LineId Id="339" Count="0" />
+      <LineId Id="338" Count="0" />
+      <LineId Id="341" Count="3" />
+      <LineId Id="340" Count="0" />
+      <LineId Id="322" Count="0" />
+      <LineId Id="260" Count="0" />
+      <LineId Id="314" Count="0" />
+      <LineId Id="265" Count="0" />
+      <LineId Id="352" Count="0" />
+      <LineId Id="313" Count="0" />
+      <LineId Id="635" Count="2" />
+      <LineId Id="634" Count="0" />
+      <LineId Id="638" Count="10" />
+      <LineId Id="364" Count="0" />
+      <LineId Id="458" Count="0" />
+      <LineId Id="457" Count="0" />
+      <LineId Id="459" Count="1" />
+      <LineId Id="363" Count="0" />
+      <LineId Id="64" Count="0" />
+      <LineId Id="254" Count="0" />
+      <LineId Id="362" Count="0" />
+      <LineId Id="249" Count="0" />
+    </LineIds>
+    <LineIds Name="NCI_MAIN.ACTNCIDispenser">
+      <LineId Id="1" Count="4" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisPosState" Id="{084b163a-4c57-4539-ac8f-f6914f06309a}">
+    <Declaration><![CDATA[TYPE ST_AxisPosState :
+STRUCT
+	bGo_OK			:BOOL		;		//定位完成	
+	bGo_Moving		:BOOL		;		//定位中	
+	rGo_CT			:REAL		;		//定位持续时间	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="YV_Ctrl" Id="{06ecf3c5-8538-430d-9659-39fefa6322ad}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM YV_Ctrl
+VAR
+	fbPOU1: ARRAY[1..4] OF FB_V_3B5;
+	i:UINT;
+	j:INT;
+	bFirstRun: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bFirstRun=FALSE THEN
+	FOR i:=1 TO 4 BY 1 DO
+		arstYV[i].bYVBw_A:=FALSE;
+	END_FOR
+arstYV[1].bYVFw_A:=TRUE;
+arstYV[2].bYVFw_A:=TRUE;
+arstYV[3].bYVFw_A:=TRUE;
+arstYV[4].bYVFw_A:=TRUE;
+//    bFirstRun:=TRUE;
+END_IF	
+
+ACT_01_BlowYV();   // 对中气缸
+]]></ST>
+    </Implementation>
+    <Action Name="ACT_01_BlowYV" Id="{4d76fcbd-f4cc-483f-bbf4-9f61a84c60bf}">
+      <Implementation>
+        <ST><![CDATA[
+//放料气缸(左)
+IF bFirstRun=FALSE THEN
+arstYV[1].bYVFw_A:=TRUE;
+arstYV[1].bYVBw_A:=FALSE;
+bFirstRun:=TRUE;
+END_IF
+// 	气缸IO关联
+arstYV[1].bYVBw_In:=X000007;     //  缩回
+arstYV[1].bYVFw_In:=X000006 ;    //  伸出
+//stYV[3].bYVBw_Out:=Y00105;   
+//stYV[3].bYVFw_Out:=Y00106;   
+Y000005:=arstYV[1].bYVBw_Out (*AND NOT X00102) OR NOT X00102 *) ;       // 缩回
+Y000004:=arstYV[1].bYVFw_Out (*OR (X00102 AND arstYV[1].bYVBw_Out)*) ;   // 伸出
+// 功能块
+fbPOU1[1](fbstYV:=arstYV[1],stSystem:=stSystem,inChannelid:=1);]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="YV_Ctrl">
+      <LineId Id="179" Count="1" />
+      <LineId Id="217" Count="0" />
+      <LineId Id="183" Count="0" />
+      <LineId Id="219" Count="0" />
+      <LineId Id="221" Count="2" />
+      <LineId Id="184" Count="3" />
+      <LineId Id="10" Count="0" />
+    </LineIds>
+    <LineIds Name="YV_Ctrl.ACT_01_BlowYV">
+      <LineId Id="10" Count="8" />
+      <LineId Id="26" Count="1" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="22" Count="3" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

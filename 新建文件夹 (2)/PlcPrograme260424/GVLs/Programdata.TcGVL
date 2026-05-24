@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="Programdata" Id="{e4f61e25-eb12-411d-8c25-3d9c0162ad7f}">
+    <Declaration><![CDATA[VAR_GLOBAL
+	(* *******PTP/NCI*********** *)
+	arAXIS:ARRAY[1..10] OF AXIS_REF;
+	
+	tonSystemFirstRun:TON;
+	posEdgeFirstRun:R_TRIG;
+	//in_stItpToPlc AT %I*:NCTOPLC_NCICHANNEL_REF;
+	//out_stItpToPlc AT %Q*:PLCTONC_NCICHANNEL_REF;
+	
+	(* ******AIO****** *)	
+	AX_1 AT%I*: ARRAY[1..4]  OF INT;// 根据3064、3062、3061情况确定数组长度
+	AX_2 AT%I*: ARRAY[1..4]  OF INT;
+	AY_1 AT%Q*: ARRAY[1..4]  OF INT;// 根据4004、4002情况确定数组长度
+	AY_2 AT%Q*: ARRAY[1..4]  OF INT;
+
+	(**************************************************************************)
+	// stXDescPitch: ST_CompensationDesc := (fPosMin:=0.0, fPosMax:=100.0, nTableElements:=11)---安捷伦激光干涉仪补偿表取反,单位mm;
+   stXPitchTable: ARRAY[0..20] OF ST_CompensationElement :=[(fPos:=0.0, fCompensation:=0.0),
+                                                           (fPos:=10.0, fCompensation:=0.0),
+                                                           (fPos:=20.0, fCompensation:=0.0),
+                                                           (fPos:=30.0, fCompensation:=0.0),
+                                                           (fPos:=40.0, fCompensation:=0.0),
+                                                           (fPos:=50.0, fCompensation:=0.0),
+                                                           (fPos:=60.0, fCompensation:=0.0),
+                                                           (fPos:=70.0, fCompensation:=0.0),
+                                                           (fPos:=80.0, fCompensation:=0.0),
+                                                           (fPos:=90.0, fCompensation:=0.0),
+                                                           (fPos:=100.0, fCompensation:=0.0),
+                                                           (fPos:=110.0, fCompensation:=0.0),
+                                                           (fPos:=120.0, fCompensation:=0.0),
+                                                           (fPos:=130.0, fCompensation:=0.0),
+                                                           (fPos:=140.0, fCompensation:=0.0),
+                                                           (fPos:=150.0, fCompensation:=0.0),
+                                                           (fPos:=160.0, fCompensation:=0.0),
+                                                           (fPos:=170.0, fCompensation:=0.0),
+                                                           (fPos:=180.0, fCompensation:=0.0),
+                                                           (fPos:=190.0, fCompensation:=0.0),
+                                                           (fPos:=200.0, fCompensation:=0.0)];
+   //stYDescPitch: ST_CompensationDesc := (fPosMin:=0.0, fPosMax:=100.0, nTableElements:=11)---安捷伦激光干涉仪补偿表取反,单位mm;
+   stYPitchTable: ARRAY[0..15] OF ST_CompensationElement :=[(fPos:=0.0, fCompensation:=0),
+                                                           (fPos:=10.0, fCompensation:=-0.0),
+                                                           (fPos:=20.0, fCompensation:=-0.0),
+                                                           (fPos:=30.0, fCompensation:=-0.0),
+                                                           (fPos:=40.0, fCompensation:=-0.0),
+                                                           (fPos:=50.0, fCompensation:=-0.0),
+                                                           (fPos:=60.0, fCompensation:=-0.0),
+                                                           (fPos:=70.0, fCompensation:=-0.0),
+                                                           (fPos:=80.0, fCompensation:=-0.0),
+                                                           (fPos:=90.0, fCompensation:=-0.0),
+                                                           (fPos:=100.0, fCompensation:=-0.0),
+                                                           (fPos:=110.0, fCompensation:=-0.0),
+                                                           (fPos:=120.0, fCompensation:=-0.0),
+                                                           (fPos:=130.0, fCompensation:=-0.0),
+                                                           (fPos:=140.0, fCompensation:=-0.0),
+                                                           (fPos:=150.0, fCompensation:=-0.0)];
+	(**************************************************************************) 
+    
+    (**)  
+    bXProhibitFwMvALM		:			BOOL:=TRUE			;		(*	X 正向运动禁止报警*)
+	bXProhibitBwMvALM		:			BOOL:=TRUE			;		(*	X 负向运动禁止报警*)
+	
+    bYProhibitFwMvALM		:			BOOL:=TRUE			;		(*	Y 正向运动禁止报警*)
+	bYProhibitBwMvALM		:			BOOL:=TRUE			;		(*	Y 负向运动禁止报警*)
+	
+	bRProhibitFwMvALM		:			BOOL:=TRUE			;		(*	R 正向运动禁止报警*)
+	bRProhibitBwMvALM		:			BOOL:=TRUE			;		(*	R 负向运动禁止报警*)
+	
+	bZ1ProhibitFwMvALM		:			BOOL:=TRUE			;		(*	Z1 正向运动禁止报警*)
+	bZ1ProhibitBwMvALM		:			BOOL:=TRUE			;		(*	Z1 负向运动禁止报警*)
+	
+	bZ2ProhibitFwMvALM		:			BOOL:=TRUE			;		(*	Z2 正向运动禁止报警*)
+	bZ2ProhibitBwMvALM		:			BOOL:=TRUE			;		(*	Z2 负向运动禁止报警*)
+	
+    (*从站号*)
+    uiSlaveNum: UINT;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

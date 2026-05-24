@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_IJP" Id="{1aa290ff-a198-4666-a263-2493a81ede94}">
+    <Declaration><![CDATA[TYPE ST_IJP :
+STRUCT
+	in_stItpToPlc AT %I*: NCTOPLC_NCICHANNEL_REF;
+	out_stItpToPlc AT %Q*:  PLCTONC_NCICHANNEL_REF;
+	strNciName			    :STRING(255)			    ;           // NCI通道名
+	bBuildGroupExe			:BOOL				        ;			// 将NC轴添加进NCI通道中 —— 触发
+	bClearGroupExe			:BOOL				        ;			// 清除NCI通道中的轴，释放轴 —— 触发
+	bLoadPGMExe			    :BOOL				        ;			// G代码装载
+	bStartExe			    :BOOL				        ;			// 启动NC通道
+	bStopExe			    :BOOL				        ;			// 停止NC通道
+	bEstopExe			    :BOOL				        ;			// 紧急停止NCI
+	bItpEStopEx             : BOOL ;                                 //  暂停G代码
+	bItpStepOnAfterEStopEx  : BOOL                    ;               //  继续G代码
+	bAfterEstopExe			:BOOL				        ;			// 紧急停止后恢复
+	bResetExe			    :BOOL				        ;			// 错误复位
+	bWriteRParExe			:BOOL				        ;				// 写R变量
+	bReadRParExe			:BOOL				        ;				// 读R变量
+	bLayerChanging			:BOOL				        ;				// 图层切换标志
+	bLayerChanged			:BOOL				        ;	       // 图层切换指令
+	bPrintDone			    :BOOL				        ;           // 轨迹执行完成
+	bLoadPGMDone			:BOOL				        ;    // load路径文件完成
+	bEx_TrigH			    :BOOL				        ;		    // 高压触发	输出到硬件
+    bEx_Trig			        :BOOL				        ;		    // 阀触发	输出到硬件	
+	bEx_TrigHfb			              :BOOL				        ;		    // 手动高压触发	输出到硬件反馈
+    bEx_Trigfb			              :BOOL				        ;		    // 手动阀触发	输出到硬件反馈	
+    EL5131_CamCtrlMax       :int                        ;// 最大位置比较数组量	
+	arrWriteRPar			:ARRAY[0..19] OF LREAL		;
+	arrReadRPar			    :ARRAY[0..19] OF LREAL		;
+    bEx_TrigEl5131          :BOOL				        ;		    // 位置比较触发允许		
+    bWriteZeroShiftExe      :BOOL;
+	bEx_TrigBumpBack		:BOOL;								//开泵回抽模式
+	lZeroShiftX             :LREAL                      ;           //X偏移值
+	lZeroShiftY             :LREAL                      ;           //Y偏移值
+	lZeroShiftZ             :LREAL                      ;           //Z偏移值
+
+
+	
+
+    rPosTolerance           :LREAL :=0.01                     ;           //位置比较允许误差
+	tEndPosDelay            :TIME   :=T#1S                       ;           //终点比较延迟时间
+//	bTrigSwitch             :BOOL                       ;           //位置比较高压是否开启(on=开)
+//	bTrigPreSwitch          :BOOL                       ;          //比置比较例阀是否开启(on=开)
+		
+    bEl5131_TrigH:  BOOL;                                         //  (1-X1/Y1/Z1位置触发) (2-X1/Y2/Z1位置触发) (3-X2/Y1/Z2位置触发) (4-X2/Y2/Z2位置触发)
+    bEl5131_Trig :  BOOL;
+ 
+	strPRGName			    :STRING(255)			    ;           // 文件名
+	lrOverrideSet			:LREAL				        ;			// 速度比例设定
+	iJetOnDelay			    :INT:=1						;			// 喷墨开延时
+	iJetOffDelay			:INT						;			// 喷墨关延时
+
+//	udiErrOutToPlc                  AT%I*                     :UDINT;            // NCI故障码
+//    lrPathVeloOutToPlc              AT%I*                     :LREAL ;           // NCI合成速度
+	arErrorID									:ARRAY[1..7] OF BOOL;			//错误ID
+	udiError									:UDINT			    ;// 错误编号
+	bError										:BOOL													;			// 错误标志
+    bErrorEStop                                  : BOOL ;                    ;            //  G代码暂停错误标志
+	
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

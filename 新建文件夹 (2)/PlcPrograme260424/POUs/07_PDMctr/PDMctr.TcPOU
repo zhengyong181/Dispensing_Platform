@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="PDMctr" Id="{5d420222-756d-4c5d-b75c-0781e256448e}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PDMctr
+VAR
+	FB_PDMSCtr:FB_PDMSCtr;
+
+	TonWrite: TON;
+	TonWriteQ: BOOL;
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[FB_PDMSCtr(
+	stLightCtr:= stLightCtr, 
+	strNetID:=stSystem.strNetID , 
+	uiSlaveAddr:=1010, 
+	wIndex:= 16#8000, 
+	wstrCommPara=> );
+
+	
+		
+]]></ST>
+    </Implementation>
+    <LineIds Name="PDMctr">
+      <LineId Id="7" Count="4" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="29" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

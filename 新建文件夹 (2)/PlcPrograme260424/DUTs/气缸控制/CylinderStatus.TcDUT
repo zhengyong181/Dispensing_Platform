@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="CylinderStatus" Id="{2d10f4f9-7e35-478f-9edd-2c414897e4ed}">
+    <Declaration><![CDATA[(* 单个气缸状态 *)
+TYPE CylinderStatus :
+STRUCT
+    bExtendReq    : BOOL;   // 伸出请求
+    bRetractReq   : BOOL;   // 回缩请求
+    q_bExtend     : BOOL;   // 输出伸出
+    q_bRetract    : BOOL;   // 输出回缩
+    xExtendPos    : BOOL;   // 伸出到位
+    xRetractPos   : BOOL;   // 回缩到位
+    bInDeadtime   : BOOL;   // 死区标志
+    bAlarm        : BOOL;   // 报警状态
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

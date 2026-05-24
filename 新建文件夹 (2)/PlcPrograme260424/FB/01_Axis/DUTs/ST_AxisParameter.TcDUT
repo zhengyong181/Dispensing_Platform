@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisParameter" Id="{b7d94fa2-36e7-438a-9cc9-187bbde489c5}">
+    <Declaration><![CDATA[TYPE ST_AxisParameter :
+STRUCT	
+	rMaxVel									:REAL				;			//额定最大速度	
+	rHmOffset								:REAL				;			//原点偏差值(单原点回零时使用)	
+	rHmVel									:REAL				;			//回零速度	
+	rHmAcc									:REAL				;			//回零加速度	
+	rHmDec									:REAL				;			//回零减速度	
+	rHmJerk									:REAL				;			//回零跃度	
+	rJogVel_M								:REAL				;			//手动点动速度	
+	rJogAcc_M								:REAL				;			//手动点动加速度	
+	rJogDec_M								:REAL				;			//手动点动减速度
+	rJogPos_M								:REAL				;			//手动寸动增量	
+	rJogVel_A								:REAL				;			//自动点动速度	
+	rJogAcc_A								:REAL				;			//自动点动加速度	
+	rJogDec_A								:REAL				;			//自动点动减速度	
+	rJogPos_A								:REAL				;			//自动寸动增量	
+	rStopDec								:REAL				;			//停止减速度	
+	rStopJerk								:REAL				;			//停止跃度	
+	rSetPos									:REAL				;			//置位位置	
+	udiPDO_60FD				AT%I*			:UDINT				;			//限位原点接入驱动器下配置：数字输入
+	udiPDO_6071				AT%Q*			:INT				;			// 输入力矩
+//	uiPDO_60B8				AT%Q*			:UINT				;			//探针回零模式下配置：探针控制字
+//	uiPDO_60B9				AT%I*			:UINT				;			//探针回零模式下配置：探针状态字	
+	uiHomeMode								:UINT				;			//0=碰限位回零 , 1=单原点回零 , 2=限位+原点光电回零,6=驱动器回零,8=模块限位+驱动器回零	
+	iTorque									:INT				;			//设定转矩
+	bAbsEnc									:BOOL				;			//true= 绝对值编码器，false= 增量式编码器	
+	bHmDir									:BOOL				;			//FALSE=正向回零 , TRUE=反向回零	
+//	diPDO_60BA		 		AT%I*			:DINT				;			//探针回零模式下配置：探针1上升沿	
+	diPDO_6064								:DINT				;			//轴当前脉冲数
+	rInPosValue                     		:REAL	:=0.01		;			// 运动到位
+	rSetPosition							:REAL				;			// 回退距离
+	uiAxisChannelNum						:UINT	:=1			;			//针对多轴驱动器中的轴通道号,单轴按通道1计算
+	rTorque                                 :REAL               ;           // 力矩模式设定力矩6071
+	sthomeViaDrivePar 				:ST_HomeViaDrivePar			;			
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

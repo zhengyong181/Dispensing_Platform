@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Axis_PE_Correct" Id="{c4fbb684-183b-4555-9614-c73591c13623}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Axis_PE_Correct
+VAR_IN_OUT
+	AxisRef: AXIS_REF;
+	// 补偿数据数组
+	arstPitchTable: ARRAY[*] OF ST_CompensationElement;
+END_VAR
+VAR_INPUT
+	// 功能开启
+	bEnable: BOOL;
+	// 轴回零状态
+	bAxisHomeOK: BOOL;
+	// 间隙补偿方向
+	bBacklashDir: BOOL;
+	// 间隙补偿
+	rBcaklash: REAL;
+	// 补偿间距
+	rDistance: REAL;
+END_VAR
+VAR_OUTPUT
+	// 当前补偿间隙值
+	lrCurBacklash: LREAL;
+	// 当前位置补偿值
+	lrCOmpensation: LREAL;
+	// 补偿功能运行状态
+	bBusy: BOOL;
+	// 错误
+	bError: BOOL;
+END_VAR
+VAR
+	strVersion: STRING;
+	// TRUE
+	bFirstRun: BOOL;
+	i: DINT;
+	mcBacklashCompensation: MC_BacklashCompensation;
+	arstPitchTableConvert: ARRAY[0..999] OF ST_CompensationElement;
+	stCompensationDesc: ST_CompensationDesc;
+	fbPositionCompensation: FB_PositionCompensation;
+	fbMcPositionCorrectionLimiter: MC_PositionCorrectionLimiter;
+	fbMcReadParameter: MC_ReadParameter;
+	fbMcWriteParaCompensationOff: MC_WriteParameter;
+	fbMcWriteParaCompensationOn: MC_WriteParameter;
+	bCompensationOn: BOOL;
+	bCompensationOff: BOOL;
+	tonCompensationOn: TON;
+	tonCompensationOff: TON;
+	i1: dINT;
+	i2: dINT;
+END_VAR
+VAR_INPUT
+	// 轴行程设置为0 到 负数，即点位越走越小时，置位True
+	bAxisMovePosGetSmaller: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*********************
+	by yu
+
+	2023-12-29		设立运动轴位置补偿功能块
+								位置补偿最大支持 1000 组补偿数据
+								补偿位置从小到大,补偿值为误差值
+	2025-07-11		增加版本记录
+	2025-08-07		增加间隙补偿功能，背隙补偿开始的方向设定 bBacklashDir，根据轴的位置的移动方向确定，正向移动补偿为True，反向移动补偿为False
+	2026-01-26		增加输入变量 bAxisMovePosGetSmaller ,当实际轴位置是越走越小时，此变量置为 true；轴位置是越走越大，置为 False
+													
+*********************)
+
+strVersion := '2026-01-26';
+IF bFirstRun THEN
+	;
+	bFirstRun := FALSE ;
+END_IF
+
+
+//根据输入补偿数据，对数据进行转换。数据抽取转换为定长数组
+//超出输入数组大小的元素的补偿数据与最后一位数据的相同，补偿点位以等间距递增2
+i1:= LOWER_BOUND(arstPitchTable,1);
+i2:=UPPER_BOUND(arstPitchTable,1);
+IF bAxisMovePosGetSmaller THEN //
+	IF i2< 999 THEN
+		FOR i:=(i2+1) TO 999 BY 1 DO
+			arstPitchTableConvert[999-i].fPos := arstPitchTable[i2].fPos + rDistance *  DINT_TO_REAL((i - i2));
+			arstPitchTableConvert[999-i].fCompensation := arstPitchTable[i2].fCompensation;
+		END_FOR;
+	END_IF;
+	FOR i:=i1 TO i2 BY 1 DO
+		arstPitchTableConvert[999-i].fPos := arstPitchTable[i].fPos;
+		arstPitchTableConvert[999-i].fCompensation := arstPitchTable[i].fCompensation;
+	END_FOR;
+ELSE
+	IF i2< 999 THEN
+		FOR i:=(i2+1) TO 999 BY 1 DO
+			arstPitchTableConvert[i].fPos := arstPitchTable[i2].fPos + rDistance *  DINT_TO_REAL((i - i2));
+			arstPitchTableConvert[i].fCompensation := arstPitchTable[i2].fCompensation;
+		END_FOR;
+	END_IF;
+	FOR i:=i1 TO i2 BY 1 DO
+		arstPitchTableConvert[i].fPos := arstPitchTable[i].fPos;
+		arstPitchTableConvert[i].fCompensation := arstPitchTable[i].fCompensation;
+	END_FOR;	
+END_IF
+
+//补偿参数设定
+stCompensationDesc.fPosMin:=arstPitchTableConvert[0].fPos;
+stCompensationDesc.fPosMax:=arstPitchTableConvert[999].fPos;
+stCompensationDesc.nTableElements:=1000;
+stCompensationDesc.bModulo:=FALSE;
+
+//轴参数中开启或关闭PositionCorrection功能
+IF bEnable THEN
+	bCompensationOff:=FALSE;
+	tonCompensationOn(IN:= TRUE, PT:=TIME#10MS , Q=> , ET=> );
+	IF tonCompensationOn.Q THEN
+		bCompensationOn:=TRUE;
+	END_IF	
+ELSE
+	bCompensationOn:=FALSE;		
+	tonCompensationOff(IN:= TRUE, PT:=TIME#10MS , Q=> , ET=> );
+	IF tonCompensationOff.Q THEN
+		bCompensationOff:=TRUE;
+	END_IF
+END_IF
+
+
+
+//功能块调用
+//轴参数中开启PositionCorrection功能
+fbMcWriteParaCompensationOn(
+	Axis:= AxisRef, 
+	Execute:= bCompensationOn, 
+	ParameterNumber:=AxisEnablePosCorrection , 
+	Value:= 1, 
+	Done=> , 
+	Busy=> , 
+	Error=> , 
+	ErrorID=> );
+//轴参数中关闭PositionCorrection功能
+fbMcWriteParaCompensationOff(
+	Axis:= AxisRef, 
+	Execute:= bCompensationOff, 
+	ParameterNumber:=AxisEnablePosCorrection , 
+	Value:=0 , 
+	Done=> , 
+	Busy=> , 
+	Error=> , 
+	ErrorID=> );
+	
+
+//间隙补偿功能必须在补偿功能开启后才可开启
+IF fbMcReadParameter.Value = 1 THEN
+	mcBacklashCompensation(
+		Axis:= AxisRef, 
+		Enable:= bAxisHomeOK AND bCompensationOn, 
+		Backlash:= rBcaklash, 
+		CompensationInPositiveDirection:= bBacklashDir, 
+		Ramp:= , 
+		DisableMode:= , 
+		Options:= , 
+		Enabled=> , 
+		Busy=> , 
+		Error=> , 
+		ErrorID=> , 
+		CurrentBacklash=> lrCurBacklash, 
+		Limiting=> );
+END_IF;
+	
+//获取位置补偿值功能块
+fbPositionCompensation(
+	Enable:=bAxisHomeOK AND bCompensationOn , 
+	pTable:=ADR(arstPitchTableConvert) , 
+	cbSize:=SIZEOF(arstPitchTableConvert) , 
+	ReferenceAxis:= AxisRef.NcToPlc, 
+	Desc:=stCompensationDesc , 
+	Compensation=>lrCOmpensation , 
+	Error=> , 
+	ErrorId=> , 
+	Active=> );
+
+//在当前位置上写入补偿值功能块
+fbMcPositionCorrectionLimiter(
+	Axis:=AxisRef , 
+	Enable:= bAxisHomeOK AND  bCompensationOn, 
+	PositionCorrectionValue:= lrCOmpensation + lrCurBacklash, 
+	CorrectionMode:=POSITIONCORRECTION_MODE_FAST  , 
+	Acceleration:=500 , 
+	CorrectionLength:= , 
+	Busy=> , 
+	Error=> , 
+	ErrorID=> , 
+	Limiting=> );	
+	
+
+
+//读取补偿功能开启状态
+fbMcReadParameter(
+	Axis:=AxisRef , 
+	Enable:=TRUE , 
+	ParameterNumber:= AxisEnablePosCorrection , 
+	ReadMode:=READMODE_CYCLIC , 
+	Valid=> , 
+	Busy=> , 
+	Error=> , 
+	ErrorID=> , 
+	Value=> );
+
+//状态输出	
+IF fbMcReadParameter.Valid THEN
+	IF fbMcReadParameter.Value = 1 AND fbPositionCompensation.Active AND fbMcPositionCorrectionLimiter.Busy THEN
+		bBusy:=TRUE;
+	ELSE
+		bBusy:=FALSE;
+	END_IF;
+END_IF;
+
+
+
+	]]></ST>
+    </Implementation>
+    <LineIds Name="FB_Axis_PE_Correct">
+      <LineId Id="6028" Count="7" />
+      <LineId Id="6239" Count="1" />
+      <LineId Id="6036" Count="150" />
+      <LineId Id="855" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

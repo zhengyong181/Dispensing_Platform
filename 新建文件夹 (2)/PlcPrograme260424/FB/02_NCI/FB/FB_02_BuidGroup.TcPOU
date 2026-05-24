@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_02_BuidGroup" Id="{c2a71bfc-09e9-4bf9-b476-9c80c5c9d727}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_02_BuidGroup
+
+VAR_INPUT
+	bExecute:BOOL;
+	nXAxisId:UDINT;
+	nYAxisId:UDINT;
+	nZAxisId:UDINT;
+	nQ1AxisId:UDINT;
+	nQ2AxisId:UDINT;
+END_VAR
+VAR_OUTPUT
+	bBusy:BOOL;(*功能块执行忙标志*)
+	bError:BOOL;(*出错*)
+	bDone:BOOL;(*执行完毕*)
+END_VAR
+VAR_IN_OUT
+//	stX:AXIS_REF;
+//	stY:AXIS_REF;
+//	stZ:AXIS_REF;
+	stItpToPlc :NCTOPLC_NCICHANNEL_REF;
+	stPlcToItp:PLCTONC_NCICHANNEL_REF;
+END_VAR
+VAR
+	BuidGroupStep:INT:=0;
+	fbBuidGroup:CfgBuildExt3DGroup;(*配置NciGroup*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE BuidGroupStep OF
+	0:
+	  IF  bExecute THEN
+		 bBusy:=TRUE;(*FB执行状态*)
+		  bDone:=FALSE;(*FB执行完毕*)
+		  bError:=FALSE;(*报错*)
+		  BuidGroupStep:=10;(*进入10步*) 
+	  END_IF
+	10:
+	  fbBuidGroup(
+	    bExecute:= TRUE, 
+	    nGroupId:= ItpGetGroupId(sNciToPlc:=stItpToPlc), 
+	    nXAxisId:= nXAxisId, 
+	    nYAxisId:= nYAxisId, 
+	    nZAxisId:= nZAxisId, 
+	    nQ1AxisId:= nQ1AxisId, 
+	    nQ2AxisId:= nQ2AxisId, 
+	    nQ3AxisId:= 0, 
+	    nQ4AxisId:= 0, 
+	    nQ5AxisId:= 0, 
+	    tTimeOut:= , 
+	    bBusy=> , 
+	    bErr=> , 
+	    nErrId=> );
+	   IF NOT fbBuidGroup.bBusy THEN
+		  IF NOT fbBuidGroup.bErr THEN
+			BuidGroupStep:=20;(*进入20步*)  
+		  ELSE
+			bBusy:=FALSE;
+			bError:=TRUE;
+			BuidGroupStep:=999;
+		  END_IF
+		fbBuidGroup(bExecute:= FALSE,nGroupId:= ItpGetGroupId(sNciToPlc:=stItpToPlc));
+	    END_IF
+	 20:
+	   //ItpSetOverridePercent(fOverridePercent:= 100, sPlcToNci:= stPlcToItp);
+	   bDone:=TRUE;
+       bBusy:=FALSE;   
+	   IF NOT bExecute THEN
+		 BuidGroupStep:=0;
+	   END_IF
+	 999:
+	   IF NOT bExecute THEN		   
+	    BuidGroupStep:=0;
+        bError:=FALSE; 
+	 END_IF
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_02_BuidGroup">
+      <LineId Id="9" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="28" Count="2" />
+      <LineId Id="23" Count="1" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="35" Count="13" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="51" Count="3" />
+      <LineId Id="56" Count="3" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="68" Count="3" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="21" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

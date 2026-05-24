@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_YV" Id="{3cfc98f2-48f9-4913-ac66-75f5773bcea5}">
+    <Declaration><![CDATA[TYPE ST_YV :
+STRUCT
+	bYVFw_A   :BOOL; //  伸出操作
+	bYVBw_A   :BOOL; //  缩回操作
+	bYVFw_In  :BOOL; //  伸出限位
+	bYVBw_In  :BOOL; //  缩回限位
+	bYVFw_OK  :BOOL; //  气缸伸出到位
+	bYVBw_OK  :BOOL; //  气缸缩回到位
+	bYVFw_Out :BOOL; //  硬件输出
+	bYVBw_Out :BOOL; //  硬件输出
+	bError	  :BOOL; //  错误状态
+	//arErrorID :UINT; //  错误ID
+	udiError  :UDINT; //  错误ID
+	arErrorID	  :ARRAY[0..7] OF BOOL   ;   // 错误ID,上位机需求
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

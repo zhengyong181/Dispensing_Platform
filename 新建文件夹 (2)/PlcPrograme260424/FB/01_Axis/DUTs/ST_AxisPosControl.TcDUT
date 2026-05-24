@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisPosControl" Id="{65909510-2343-4062-b460-c55d15095e9a}">
+    <Declaration><![CDATA[TYPE ST_AxisPosControl :
+STRUCT
+	bGo_Con			:			BOOL			;		//定位条件
+	bGo_M			:			BOOL			;		//手动定位启动
+	bGo_A			:			BOOL			;		//自动定位启动
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

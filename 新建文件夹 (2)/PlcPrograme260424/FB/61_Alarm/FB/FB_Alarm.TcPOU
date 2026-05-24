@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Alarm" Id="{d7e3a75e-a8ed-4153-a5b0-2220561a7018}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Alarm
+VAR_OUTPUT
+	//当前有报警发生
+	bErrorOccur						:				BOOL					;
+	//当前发生报警的最大报警等级
+	enumErrorClassMax				:				Enum_ErrorClass			;(*当前的最大报警等级*)
+END_VAR
+VAR
+	// 报警整合输出变量，不启用
+	bNoStopAlarm					:               BOOL					;
+   	// 不启用
+	bStopAlarm						:               BOOL					;
+END_VAR
+VAR_OUTPUT
+	//报警整合后输出动作，根据需求设定
+	bAlarmAction1					:				BOOL					;
+	bAlarmAction2					:				BOOL					;
+	bAlarmAction3					:				BOOL					;
+	bAlarmAction4					:				BOOL					;
+END_VAR
+VAR
+	strVersion: STRING;
+	i								:               INT						;
+	m								:               INT						;
+	n								:               INT						;
+	rtrigErrorOccur					:          		R_TRIG					;
+	tonErrorOccur					: 				TON						;
+	ftrigClearHistory				: 				F_TRIG					;
+	ftrigErrorOccur					: 				F_TRIG					;
+	fbGetLocalSystemTime				:				FB_LocalSystemTime		;
+	fbGetLocalAmsNetID: FB_GetLocalAmsNetId;
+	binitdone: BOOL;
+	Ton01: TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Action Name="A_ClearHistoryError" Id="{3d0cf9af-8e84-4e99-92e2-624bdf0730c1}">
+      <Implementation>
+        <ST><![CDATA[//手动清除历史报警数组
+ftrigClearHistory(CLK:=bClearHistoryError  );
+IF ftrigClearHistory.Q THEN
+       FOR n:=1 TO 200 DO
+             arrstHistoryError[n].iErrorID:=0;
+             arrstHistoryError[n].wstrErrorMessage:="";
+             arrstHistoryError[n].dtErrorTime:=DT#2024-05-11-00:00;
+        END_FOR
+        iHistoryErrorNum:=0;
+END_IF]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_Init" Id="{47ac8022-fc24-4c0f-9232-4e67582fb679}">
+      <Implementation>
+        <ST><![CDATA[//获取系统netid
+fbGetLocalAmsNetID(
+	bExecute:= TRUE, 
+	tTimeOut:= , 
+	bBusy=> , 
+	bError=> , 
+	nErrId=> , 
+	AddrString=> , 
+	AddrBytes=> );
+Ton01(IN:=TRUE,PT:=TIME#50MS);
+IF ton01.Q AND NOT fbGetLocalAmsNetID.bBusy THEN	
+	binitdone := TRUE ;
+END_IF;]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_UpdateActError" Id="{7bcddced-6244-45a1-a54a-b5d861ab1334}">
+      <Implementation>
+        <ST><![CDATA[//有报警发生时，将报警数据抓取存储到当前报警数组中
+rtrigErrorOccur(CLK:=bErrorOccur);
+IF bErrorOccur THEN
+	IF rtrigErrorOccur.Q THEN
+   	 	tonErrorOccur(In:=FALSE);
+	END_IF
+    tonErrorOccur(In:= NOT tonErrorOccur.Q,PT:=T#1S );
+    IF tonErrorOccur.Q OR rtrigErrorOccur.Q THEN
+		n:=1;
+        m:=1;
+        FOR n:=1 TO iErrorIDMax DO
+			IF arrstError[n].bErrorOccur THEN
+				arrstActError[m].iErrorID := arrstError[n].iErrorID;
+				arrstActError[m].wstrErrorMessage := arrstError[n].wstrErrorMessage;						
+				arrstActError[m].dtErrorTime := arrstError[n].dtErrorOccorTime;
+                m:=m+1;
+				IF m>30 THEN
+					n:=32766;  (*exit FOR*)
+				END_IF
+			END_IF
+         END_FOR
+         IF m<30 THEN
+			FOR n:=m TO 30 DO
+				arrstActError[n].iErrorID:=0;
+                arrstActError[n].wstrErrorMessage:="";
+                arrstActError[n].dtErrorTime:=DT#2024-05-11-00:00;
+             END_FOR
+          END_IF
+    END_IF
+	//当前存在的报警数量
+	iActErrorNum := m-1;
+END_IF
+
+//报警消除后，清除当前报警数组
+ftrigErrorOccur(CLK:=bErrorOccur );
+IF ftrigErrorOccur.Q THEN
+	FOR n:=1 TO 30 DO 
+		arrstActError[n].iErrorID:=0;
+		arrstActError[n].wstrErrorMessage:="";
+		arrstActError[n].dtErrorTime:=DT#2024-05-11-00:00;
+	END_FOR
+	iActErrorNum:=0;
+END_IF]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_Alarm">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Alarm.A_ClearHistoryError">
+      <LineId Id="2" Count="8" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Alarm.A_Init">
+      <LineId Id="2" Count="11" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_Alarm.A_UpdateActError">
+      <LineId Id="2" Count="41" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

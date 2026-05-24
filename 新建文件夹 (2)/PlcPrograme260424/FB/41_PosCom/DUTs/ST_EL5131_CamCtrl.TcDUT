@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_EL5131_CamCtrl" Id="{dc58e831-cbd7-4157-9277-7d3cf8099f6e}">
+    <Declaration><![CDATA[TYPE ST_EL5131_CamCtrl :
+STRUCT
+    // ------------------- 输入变量（控制指令） -------------------
+	rPosStart1				 :	LREAL;// 比较起点位置x
+	rPosStart2				 :	LREAL;// 比较起点位置y
+	rPosStart3				 :	LREAL;// 比较起点位置z
+	rPosEnd1                 :	LREAL;// 比较终点位置x
+	rPosEnd2                 :	LREAL;// 比较终点位置y
+	rPosEnd3                 :	LREAL;// 比较终点位置z
+	bCamCtrlStartEn                 :	BOOL;// 比较点执行许可标志
+	bCamCtrlEndEn                   :	BOOL;// 比较点执行许可标志
+	udiAxisId1               :UDINT                      ;           // 参与位置比较轴ID
+	udiAxisId2               :UDINT                      ;           // 参与位置比较轴ID
+	udiAxisId3               :UDINT                      ;           // 参与位置比较轴ID
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

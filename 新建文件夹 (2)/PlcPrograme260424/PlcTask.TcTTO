@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <Task Name="PlcTask" Id="{9b520e7b-4912-4a48-b0b4-6cf873bba05e}">
+    <!--CycleTime in micro seconds.-->
+    <CycleTime>1000</CycleTime>
+    <Priority>4</Priority>
+    <PouCall>
+      <Name>AxisLink</Name>
+    </PouCall>
+    <PouCall>
+      <Name>NCI_MAIN</Name>
+    </PouCall>
+    <PouCall>
+      <Name>AIO</Name>
+    </PouCall>
+    <PouCall>
+      <Name>System_State</Name>
+    </PouCall>
+    <PouCall>
+      <Name>PDMctr</Name>
+    </PouCall>
+    <PouCall>
+      <Name>Vac_Ctrl</Name>
+    </PouCall>
+    <PouCall>
+      <Name>POS_Comparition</Name>
+    </PouCall>
+    <PouCall>
+      <Name>ProgGear</Name>
+    </PouCall>
+    <PouCall>
+      <Name>YV_Ctrl</Name>
+    </PouCall>
+    <PouCall>
+      <Name>Pump</Name>
+    </PouCall>
+    <TaskFBGuid>{d0e1c77a-a9d3-4b28-9b1d-015ab7e671b5}</TaskFBGuid>
+    <Fb_init>{336157bf-75d2-4206-afcc-2096c27abc9f}</Fb_init>
+    <Fb_exit>{71edf071-6afe-4f73-b3c1-e057fab8f459}</Fb_exit>
+    <CycleUpdate>{2953aeba-75ee-43f8-9cee-d8f34b4482d2}</CycleUpdate>
+    <PostCycleUpdate>{970cf826-4385-4e92-8390-bd9e3c875c0d}</PostCycleUpdate>
+  </Task>
+</TcPlcObject>

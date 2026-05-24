@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_05_ClearGrp" Id="{e014da3c-5cb9-4ee2-9a99-80c1ae7d9f96}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_05_ClearGrp
+VAR_INPUT
+	bExecute:BOOL;
+END_VAR
+VAR_OUTPUT
+	bBusy:BOOL;(*功能块执行忙标志*)
+	bError:BOOL;(*出错*)
+	bDone:BOOL;(*执行完毕*)
+END_VAR
+VAR_IN_OUT
+//	stX:AXIS_REF;
+//	stY:AXIS_REF;
+//	stZ:AXIS_REF;
+	stItpToPlc :NCTOPLC_NCICHANNEL_REF;
+	stPlcToItp:PLCTONC_NCICHANNEL_REF;
+END_VAR
+VAR
+	ClearGrp:INT:=0;
+	fbClearGrp:CfgReconfigGroup;(*清除NciGroup*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE ClearGrp OF
+	0:
+	  IF  bExecute THEN
+		 bBusy:=TRUE;(*FB执行状态*)
+		 bDone:=FALSE;(*FB执行完毕*)
+		 bError:=FALSE;(*报错*)
+		 ClearGrp:=10;(*进入10步*) 
+	  END_IF
+	10:
+	  fbClearGrp(
+ 	    bExecute:= TRUE, 
+	    nGroupId:= ItpGetGroupId(sNciToPlc:=stItpToPlc), 
+	    tTimeOut:= , 
+	    bBusy=> , 
+	    bErr=> , 
+	    nErrId=> );
+	   IF NOT fbClearGrp.bBusy THEN
+		  IF NOT fbClearGrp.bErr THEN
+			ClearGrp:=20;(*进入20步*)  
+		  ELSE
+			bBusy:=FALSE;
+			bError:=TRUE;
+			ClearGrp:=999;
+		  END_IF
+		fbClearGrp(bExecute:= FALSE,nGroupId:= ItpGetGroupId(sNciToPlc:=stItpToPlc));
+	    END_IF
+	 20:
+	   bDone:=TRUE;
+       bBusy:=FALSE; 
+	   IF NOT bExecute THEN
+		 ClearGrp:=0;
+	   END_IF
+	 999:
+	   IF NOT bExecute THEN		   
+	    ClearGrp:=0;
+        bError:=FALSE; 
+	   END_IF
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_05_ClearGrp">
+      <LineId Id="23" Count="8" />
+      <LineId Id="61" Count="5" />
+      <LineId Id="39" Count="8" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="49" Count="11" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

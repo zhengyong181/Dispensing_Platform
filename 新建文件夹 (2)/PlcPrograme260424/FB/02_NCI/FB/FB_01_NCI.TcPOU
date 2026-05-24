@@ -1,0 +1,392 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_01_NCI" Id="{4669c164-6873-42bc-8b8d-fa63772281e6}" SpecialFunc="None">
+    <Declaration><![CDATA[
+FUNCTION_BLOCK FB_01_NCI
+// 定义功能块FB_01_NCI，用于数控指令(NCI)的集中控制
+
+VAR_IN_OUT
+  stfbIJP         :ST_IJP;  // 输入输出变量，ST_IJP结构体，用于与外部交换数据
+  in_stItpToPlc :   NCTOPLC_NCICHANNEL_REF;
+  out_stItpToPlc :  PLCTONC_NCICHANNEL_REF;
+END_VAR
+
+VAR_INPUT
+	nXAxisId:UDINT;
+	nYAxisId:UDINT;
+	nZAxisId:UDINT;
+	nQ1AxisId:UDINT;
+	nQ2AxisId:UDINT;
+	nChannelid:UDINT;
+	bProhibitMvALM:BOOL;
+END_VAR
+
+VAR
+  // 声明内部使用的功能块变量
+  fbBuildGroup  :FB_02_BuidGroup;    // 用于构建运动组的功能块
+  fbLoadProg    :FB_03_LoadProg;     // 用于加载程序的功能块
+  fbStart       :FB_04_Start;        // 用于启动运动的功能块
+  fbExStop      :FB_06_ExSTOP;       // 用于紧急停止的功能块
+  fbAfterStop   :FB_012_StepOnAfterStopEx;  // 用于紧急停止后处理的功能块
+  fbReset       :FB_08_ReSetEx;      // 用于复位系统的功能块
+  fbSetoverride :FB_09_SetOverridePercent;  // 用于设置速度百分比的功能块
+  fbClearGrp    :FB_05_ClearGrp;     // 用于清除运动组的功能块
+  fbFastMFunc   :FB_07_FastMFunc;    // 用于快速M功能的功能块
+  WriteRParameter:FB_011WriteRParameter;  // 用于写入R参数的功能块
+  ReadRParameter:FB_010_ReadRParameter;   // 用于读取R参数的功能块
+  fbItpEStopEx: ItpEStopEx ;    // 暂停G代码运行
+  fbItpStepOnAfterEStopEx : ItpStepOnAfterEStopEx ;  // 暂停G代码后继续执行G代码
+  arrfbSetAlarm:ARRAY [1..6] OF FB_SetError;
+	// 报错
+	a: BOOL;  //  程序加载错误
+	b: BOOL; //  启动错误
+	c: BOOL; // 停止错误
+	d: BOOL; // 停止后在继续错误
+	e: BOOL; // 复位出错
+	f: BOOL;  // 创建运动轴错误
+	g: BOOL;  // 清除运动轴错误
+ posEdge_bCMD_bWriteRParExe:R_TRIG;
+ ton_bCMD_bWriteRParExe:TON;
+ ton_bCMD_bReadRParExe:blink;
+ posEdge_bCMD_bLoadPgmExe:R_TRIG;
+ ton_bCMD_bLoadPgmExe:TON;
+ posEdge_bCMD_bBuildGroupExe:R_TRIG;
+ ton_bCMD_bBuildGroupExe:TON;
+ posEdge_bCMD_bClearGroupExe:R_TRIG;
+ ton_bCMD_bClearGroupExe:TON;
+ fbWriteZeroShift: FB_013_WriteZeroShiftEx;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// 调用快速M功能功能块
+// 参数说明：
+// stfbIJP07: 传递ST_IJP结构体数据
+// stItpToPlc: 从ITP(Interpreter)到PLC的数据流
+// stPlcToItp: 从PLC到ITP的数据流
+
+fbFastMFunc(stfbIJP07:=stfbIJP, stItpToPlc:= in_stItpToPlc, stPlcToItp:= out_stItpToPlc);	
+
+// 调用写入R参数功能块
+// 参数说明：
+// Execute: 执行信号，来自stfbIJP.bWriteRParExe
+// nRParamAry: 要写入的R参数数组，来自stfbIJP.arrWriteRPar
+posEdge_bCMD_bWriteRParExe(CLK:=stfbIJP.bWriteRParExe);
+ton_bCMD_bWriteRParExe(IN:=stfbIJP.bWriteRParExe,PT:=T#100MS);
+WriteRParameter(Execute:= stfbIJP.bWriteRParExe,fbnChannelid:=nChannelid, nRParamAry:= stfbIJP.arrWriteRPar);
+
+// 调用读取R参数功能块
+// 参数说明：
+// Execute: 执行信号，来自stfbIJP.bReadRParExe
+// nRParamAry: 读取的R参数数组，输出到stfbIJP.arrReadRPar
+ton_bCMD_bReadRParExe(ENABLE:=stfbIJP.bReadRParExe,TIMEHIGH:=T#50MS,TIMELOW:=T#50MS,OUT=>);
+ReadRParameter(Execute:= ton_bCMD_bReadRParExe.OUT,fbnChannelid:=nChannelid, nRParamAry=> stfbIJP.arrReadRPar);
+
+(******************* NCI功能块调用部分 **************)
+// 调用速度百分比设置功能块
+// 参数说明：
+// OverridePercent: 速度百分比值，来自stfbIJP.lrOverrideSet
+
+fbSetoverride(
+    OverridePercent:= stfbIJP.lrOverrideSet,
+    stItpToPlc:= in_stItpToPlc,
+    stPlcToItp:= out_stItpToPlc );
+
+// 调用构建运动组功能块
+// 参数说明：
+// bExecute: 构建组执行信号，来自stfbIJP.bBuildGroupExe
+posEdge_bCMD_bBuildGroupExe(CLK:=stfbIJP.bBuildGroupExe);
+ton_bCMD_bBuildGroupExe(IN:=stfbIJP.bBuildGroupExe,PT:=T#100MS);
+IF ton_bCMD_bBuildGroupExe.Q THEN
+	stfbIJP.bBuildGroupExe:=FALSE;
+END_IF
+fbBuildGroup(
+    bExecute:= stfbIJP.bBuildGroupExe, 
+    bBusy=> , 
+    bError=> f, 
+    bDone=> , 
+    nXAxisId:= nXAxisId, 
+    nYAxisId:= nYAxisId, 
+    nZAxisId:= nZAxisId, 
+	nQ1AxisId:= nQ1AxisId, 
+	nQ2AxisId:= nQ2AxisId, 
+    stItpToPlc:=  in_stItpToPlc, 
+    stPlcToItp:= out_stItpToPlc);
+
+// 调用清除运动组功能块
+// 参数说明：
+// bExecute: 清除组执行信号，来自stfbIJP.bClearGroupExe
+posEdge_bCMD_bClearGroupExe(CLK:=stfbIJP.bClearGroupExe);
+ton_bCMD_bClearGroupExe(IN:=stfbIJP.bClearGroupExe,PT:=T#100MS);
+IF ton_bCMD_bClearGroupExe.Q THEN
+	stfbIJP.bClearGroupExe:=FALSE;
+END_IF
+fbClearGrp(
+    bExecute:= stfbIJP.bClearGroupExe, 
+    bBusy=> , 
+    bError=> g, 
+    bDone=> , 
+    stItpToPlc:= in_stItpToPlc, 
+    stPlcToItp:= out_stItpToPlc);
+// 调用加载程序功能块
+// 参数说明：
+// bExecute: 执行信号，来自stfbIJP.bLoadPGMExe
+// sPrgName: 程序名称，来自stfbIJP.strPRGName
+// bError: 错误状态，输出到stfbIJP.bError
+// bDone: 完成状态，输出到stfbIJP.bLoadPGMDone
+// stX/Y/Z: 传递各轴控制接口
+// stItpToPlc/stPlcToItp: 数据流接口
+posEdge_bCMD_bLoadPgmExe(CLK:=stfbIJP.bLoadPGMExe);
+ton_bCMD_bLoadPgmExe(IN:=stfbIJP.bLoadPGMExe,PT:=T#100MS);
+IF ton_bCMD_bLoadPgmExe.Q THEN
+	stfbIJP.bLoadPGMExe:=FALSE;
+END_IF
+fbLoadProg(
+    bExecute:= stfbIJP.bLoadPGMExe, 
+    sPrgName:= stfbIJP.strPRGName, 
+    bBusy=> , 
+    bError=> a, 
+    bDone=> stfbIJP.bLoadPGMDone, 
+    stItpToPlc:= in_stItpToPlc, 
+    stPlcToItp:= out_stItpToPlc);
+
+// 调用启动功能块
+// 参数说明：
+// bExecute: 启动执行信号，来自stfbIJP.bStartExe
+// bExecute1: 停止执行信号，来自stfbIJP.bStopExe
+// bError: 错误状态，输出到stfbIJP.bError
+
+fbStart(
+    bExecute:= stfbIJP.bStartExe , 
+    bExecute1:= stfbIJP.bStopExe, 
+    bBusy=> ,
+    bError=> b, 
+    bDone=> ,  
+    stItpToPlc:= in_stItpToPlc, 
+    stPlcToItp:= out_stItpToPlc);
+
+// 调用紧急停止功能块
+// 参数说明：
+// bExecute: 紧急停止执行信号，来自stfbIJP.bEstopExe
+
+fbExStop(
+    bExecute:= stfbIJP.bEstopExe, 
+    bBusy=> , 
+    bError=> c, 
+    bDone=> , 
+    stItpToPlc:=  in_stItpToPlc, 
+    stPlcToItp:=  out_stItpToPlc);
+IF fbExStop.bDone THEN
+	stfbIJP.bEstopExe:=FALSE;
+	stfbIJP.bEx_TrigH:=FALSE;	
+	stfbIJP.bEx_Trig:=FALSE;	
+END_IF
+// 调用紧急停止后处理功能块
+// 参数说明：
+// bExecute: 执行信号，来自stfbIJP.bAfterEstopExe
+
+fbAfterStop(
+    bExecute:= stfbIJP.bAfterEstopExe, 
+    bBusy=> , 
+    bError=> d, 
+    bDone=> , 
+    stItpToPlc:= in_stItpToPlc, 
+    stPlcToItp:= out_stItpToPlc);
+IF fbAfterStop.bDone THEN
+	stfbIJP.bAfterEstopExe:=FALSE;
+END_IF
+// 调用复位功能块
+// 参数说明：
+// bExecute: 复位执行信号，来自stfbIJP.bResetExe
+
+fbReset(
+    bExecute:= stfbIJP.bResetExe, 
+    bBusy=> , 
+    bError=> e, 
+    bDone=> , 
+    stItpToPlc:= in_stItpToPlc, 
+    stPlcToItp:= out_stItpToPlc);
+IF fbReset.bDone THEN
+	stfbIJP.bResetExe:=FALSE;
+END_IF
+	
+	// 暂停G代码运行
+fbItpEStopEx(
+	sNciToPlc:= in_stItpToPlc, 
+	bExecute:= stfbIJP.bItpEStopEx , 
+	fDec:= , 
+	fJerk:= , 
+	tTimeOut:= T#300MS, 
+	bBusy=> , 
+	bErr=> stfbIJP.bErrorEStop, 
+	nErrId=> );
+	// 暂停G代码后继续执行G代码
+fbItpStepOnAfterEStopEx(
+	bExecute:= stfbIJP.bItpStepOnAfterEStopEx , 
+	tTimeOut:= T#300MS, 
+	sNciToPlc:= in_stItpToPlc, 
+	bBusy=> , 
+	bErr=> stfbIJP.bErrorEStop,   
+	nErrId=> );
+	
+fbWriteZeroShift(
+	bExecute:=stfbIJP.bWriteZeroShiftExe , 
+	nZsNo:=54 , 
+	tTimeOut:=T#300MS , 
+	lZeroShiftX:=stfbIJP.lZeroShiftX , 
+	lZeroShiftY:=stfbIJP.lZeroShiftY , 
+	lZeroShiftZ:=stfbIJP.lZeroShiftZ , 
+	bBusy=> , 
+	bErr=> , 
+	nErrId=> , 
+	stItpToPlc:=in_stItpToPlc );	
+	
+	IF a OR b OR c OR d OR e OR f OR g THEN 
+		stfbIJP.bError:= TRUE;
+		ELSE 
+			stfbIJP.bError:= FALSE;
+		END_IF
+
+	
+// 错误状态处理逻辑
+// 根据各功能块的错误状态设置全局错误代码
+IF  fbLoadProg.bError THEN
+    stfbIJP.udiError:=1;  // 加载程序错误
+ELSIF fbStart.bError THEN
+    stfbIJP.udiError:=2;  // 启动错误
+ELSIF fbExStop.bError THEN
+    stfbIJP.udiError:=3;  // 紧急停止错误
+ELSIF fbReset.bError THEN
+    stfbIJP.udiError:=4;  // 复位错误
+ELSIF fbBuildGroup.bError THEN
+    stfbIJP.udiError:=5;  // 构建组错误
+ELSIF fbClearGrp.bError THEN
+    stfbIJP.udiError:=6;  // 清除组错误	
+ELSE
+    stfbIJP.udiError:=0;  // 无错误	
+END_IF
+// 加载程序错误
+arrfbSetAlarm[1](
+	bEnable:= TRUE, 
+	iErrorID:= 130+6*(UINT_TO_INT(in_stItpToPlc.ChnId)-2), 
+	bExecute:= stfbIJP.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Load Err', 
+	wstrErrorInfoCN:="加载程序错误" , 
+	enumErrorClass:= 6, 
+	wstr1:=STRING_TO_WSTRING(stfbIJP.strNciName),
+	D1:=UDINT_TO_DINT(in_stItpToPlc.ErrorCode),
+    );
+// 启动错误
+arrfbSetAlarm[2](
+	bEnable:= TRUE, 
+	iErrorID:= 130+6*(UINT_TO_INT(in_stItpToPlc.ChnId)-2)+1, 
+	bExecute:= stfbIJP.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Start Err', 
+	wstrErrorInfoCN:="加载程序错误" , 
+	enumErrorClass:= 6, 
+	wstr1:=STRING_TO_WSTRING(stfbIJP.strNciName),
+	D1:=UDINT_TO_DINT(in_stItpToPlc.ErrorCode),
+    );
+// 紧急停止错误
+arrfbSetAlarm[3](
+	bEnable:= TRUE, 
+	iErrorID:= 130+6*(UINT_TO_INT(in_stItpToPlc.ChnId)-2)+2, 
+	bExecute:= stfbIJP.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Estop Err', 
+	wstrErrorInfoCN:="紧急停止错误" , 
+	enumErrorClass:= 6, 
+	wstr1:=STRING_TO_WSTRING(stfbIJP.strNciName),
+	D1:=UDINT_TO_DINT(in_stItpToPlc.ErrorCode),
+    );
+// 复位错误
+arrfbSetAlarm[4](
+	bEnable:= TRUE, 
+	iErrorID:= 130+6*(UINT_TO_INT(in_stItpToPlc.ChnId)-2)+3, 
+	bExecute:= stfbIJP.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Reset Err', 
+	wstrErrorInfoCN:="复位错误" , 
+	enumErrorClass:= 6, 
+	wstr1:=STRING_TO_WSTRING(stfbIJP.strNciName),
+	D1:=UDINT_TO_DINT(in_stItpToPlc.ErrorCode),
+    );
+// 构建组错误
+arrfbSetAlarm[5](
+	bEnable:= TRUE, 
+	iErrorID:= 130+6*(UINT_TO_INT(in_stItpToPlc.ChnId)-2)+4, 
+	bExecute:= stfbIJP.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Build Err', 
+	wstrErrorInfoCN:="构建组错误" , 
+	enumErrorClass:= 6, 
+	wstr1:=STRING_TO_WSTRING(stfbIJP.strNciName),
+	D1:=UDINT_TO_DINT(in_stItpToPlc.ErrorCode),
+    );
+// 清除组错误
+arrfbSetAlarm[6](
+	bEnable:= TRUE, 
+	iErrorID:= 130+6*(UINT_TO_INT(in_stItpToPlc.ChnId)-2)+4, 
+	bExecute:= stfbIJP.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Clear Err', 
+	wstrErrorInfoCN:="清除组错误" , 
+	enumErrorClass:= 6, 
+	wstr1:=STRING_TO_WSTRING(stfbIJP.strNciName),
+	D1:=UDINT_TO_DINT(in_stItpToPlc.ErrorCode),
+    );]]></ST>
+    </Implementation>
+    <LineIds Name="FB_01_NCI">
+      <LineId Id="475" Count="5" />
+      <LineId Id="1058" Count="0" />
+      <LineId Id="481" Count="5" />
+      <LineId Id="1063" Count="0" />
+      <LineId Id="1056" Count="0" />
+      <LineId Id="487" Count="5" />
+      <LineId Id="1057" Count="0" />
+      <LineId Id="493" Count="2" />
+      <LineId Id="1079" Count="13" />
+      <LineId Id="1117" Count="2" />
+      <LineId Id="1093" Count="17" />
+      <LineId Id="1120" Count="2" />
+      <LineId Id="1111" Count="5" />
+      <LineId Id="1078" Count="0" />
+      <LineId Id="496" Count="7" />
+      <LineId Id="1068" Count="0" />
+      <LineId Id="1059" Count="0" />
+      <LineId Id="1123" Count="2" />
+      <LineId Id="504" Count="5" />
+      <LineId Id="513" Count="14" />
+      <LineId Id="531" Count="11" />
+      <LineId Id="546" Count="2" />
+      <LineId Id="842" Count="0" />
+      <LineId Id="888" Count="0" />
+      <LineId Id="1011" Count="0" />
+      <LineId Id="843" Count="0" />
+      <LineId Id="549" Count="7" />
+      <LineId Id="752" Count="0" />
+      <LineId Id="561" Count="2" />
+      <LineId Id="1075" Count="1" />
+      <LineId Id="564" Count="8" />
+      <LineId Id="576" Count="2" />
+      <LineId Id="894" Count="0" />
+      <LineId Id="891" Count="0" />
+      <LineId Id="688" Count="1" />
+      <LineId Id="693" Count="7" />
+      <LineId Id="617" Count="0" />
+      <LineId Id="703" Count="0" />
+      <LineId Id="708" Count="5" />
+      <LineId Id="704" Count="1" />
+      <LineId Id="1179" Count="9" />
+      <LineId Id="690" Count="1" />
+      <LineId Id="645" Count="1" />
+      <LineId Id="649" Count="2" />
+      <LineId Id="647" Count="1" />
+      <LineId Id="618" Count="15" />
+      <LineId Id="336" Count="0" />
+      <LineId Id="940" Count="70" />
+      <LineId Id="939" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

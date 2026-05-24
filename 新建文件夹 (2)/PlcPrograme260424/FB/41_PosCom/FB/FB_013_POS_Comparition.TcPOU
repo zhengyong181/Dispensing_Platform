@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_013_POS_Comparition" Id="{cff8c1ba-9ef4-440a-9239-9be7cba546c2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_013_POS_Comparition
+VAR_IN_OUT
+	arstCamCtrl          : ARRAY[*] OF  ST_EL5131_CamCtrl; //1-X轴 2-Y轴
+	fbstIJP                :  ST_IJP;
+	stAxis               :ARRAY[*] OF  ST_AXIS;
+END_VAR
+//VAR_INPUT
+//	nXAxisId:UDINT;
+//	nYAxisId:UDINT;
+//	nZAxisId:UDINT;
+//END_VAR
+VAR
+  	bAxisInPosStart: ARRAY [1..3] OF BOOL;
+	bAxisInPosEnd:  ARRAY [1..3] OF BOOL;
+    tonWriteR:ARRAY [1..5] OF TON;
+    stepWriteR:ARRAY [1..4] OF INT;
+  	bInStartZone: BOOL;
+	bInEndZone:BOOL;
+	i:INT;
+	bEx_TrigEl5131Rtrig:r_trig;
+	bEx_TrigStartRtrig:r_trig;
+    bEx_TrigEndRtrig:r_trig;
+	bEx_TrigEl5131Ftrig:f_trig;
+    nAxisIdStep:int;
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+{region "位置比较"}
+bEx_TrigEl5131Rtrig(CLK:=fbstIJP.bEx_TrigEl5131 , Q=> );
+IF bEx_TrigEl5131Rtrig.Q THEN
+        tonWriteR[1](IN:= FALSE);
+		tonWriteR[2](IN:= FALSE);
+		tonWriteR[3](IN:= FALSE);
+		tonWriteR[5](IN := FALSE);
+END_IF	 
+		   
+IF fbstIJP.bEx_TrigEl5131 THEN
+  FOR i:=1 TO fbstIJP.EL5131_CamCtrlMax BY 1 DO
+	// 起点比较触发   
+	bEx_TrigStartRtrig(CLK:=bInStartZone , Q=> );
+	// 起点触发后延时
+	tonWriteR[5](IN := (fbstIJP.bEx_Trigfb AND fbstIJP.bEx_TrigHfb) , PT := fbstIJP.tEndPosDelay );
+	// 延时后终点比较触发
+	bEx_TrigEndRtrig(CLK:=bInEndZone AND tonWriteR[5].Q, Q=> );
+	// 起点位置比较
+	IF arstCamCtrl[i].udiAxisId1<>0 THEN	 
+	   bAxisInPosStart[1] := ABS(stAxis[arstCamCtrl[i].udiAxisId1].State.rActPos - arstCamCtrl[i].rPosStart1) < fbstIJP.rPosTolerance ;
+	ELSE
+	   bAxisInPosStart[1]:=TRUE;
+	END_IF
+	IF arstCamCtrl[i].udiAxisId2<>0 THEN
+       bAxisInPosStart[2] := ABS(stAxis[arstCamCtrl[i].udiAxisId2].State.rActPos - arstCamCtrl[i].rPosStart2) < fbstIJP.rPosTolerance ;
+	ELSE
+	   bAxisInPosStart[2]:=TRUE;
+	END_IF
+    IF arstCamCtrl[i].udiAxisId3<>0 THEN
+       bAxisInPosStart[3] := ABS(stAxis[arstCamCtrl[i].udiAxisId3].State.rActPos - arstCamCtrl[i].rPosStart2) < fbstIJP.rPosTolerance;
+	ELSE
+	   bAxisInPosStart[3]:=TRUE;
+    END_IF 
+	// 终点位置比较
+	IF arstCamCtrl[i].udiAxisId1<>0 THEN
+       bAxisInPosEnd[1] := ABS(stAxis[1].State.rActPos - arstCamCtrl[i].rPosEnd1) < fbstIJP.rPosTolerance;
+	ELSE
+	   bAxisInPosStart[1]:=TRUE;
+	END_IF
+	IF arstCamCtrl[i].udiAxisId2<>0 THEN
+       bAxisInPosEnd[2] := ABS(stAxis[2].State.rActPos - arstCamCtrl[i].rPosEnd2) < fbstIJP.rPosTolerance;
+	ELSE
+	   bAxisInPosStart[2]:=TRUE;
+	END_IF
+	IF arstCamCtrl[i].udiAxisId3<>0 THEN
+       bAxisInPosEnd[3] := (ABS(stAxis[3].State.rActPos - arstCamCtrl[i].rPosEnd2) < fbstIJP.rPosTolerance) ;
+    ELSE
+	   bAxisInPosStart[3]:=TRUE;
+    END_IF 	
+    bInStartZone := bAxisInPosStart[1] AND bAxisInPosStart[2] AND bAxisInPosEnd[3];
+	bInEndZone   := bEx_TrigEndRtrig.Q AND bAxisInPosEnd[1] AND bAxisInPosEnd[2] AND bAxisInPosEnd[3];	 
+    // 起点开
+    IF bEx_TrigStartRtrig.Q AND arstCamCtrl[1].bCamCtrlStartEn THEN
+       fbstIJP.bEl5131_Trig := TRUE;
+       fbstIJP.bEl5131_TrigH := TRUE;
+	   arstCamCtrl[1].bCamCtrlStartEn:=FALSE;
+	END_IF
+	// 终点关
+    IF  bEx_TrigEndRtrig.Q AND arstCamCtrl[1].bCamCtrlEndEn THEN
+           fbstIJP.bEl5131_Trig := FALSE;
+           fbstIJP.bEl5131_TrigH := FALSE;
+        END_IF		
+  END_FOR
+ELSE
+    // —— 复位 —— 
+    tonWriteR[5](IN := FALSE);		 
+    fbstIJP.bEl5131_Trig := FALSE;
+    fbstIJP.bEl5131_TrigH := FALSE;
+END_IF
+{endregion}]]></ST>
+    </Implementation>
+    <LineIds Name="FB_013_POS_Comparition">
+      <LineId Id="402" Count="69" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>DispensingPlatform.Hal.Beckhoff</RootNamespace>
+    <AssemblyName>DispensingPlatform.Hal.Beckhoff</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Beckhoff.TwinCAT.Ads" />
+    <PackageReference Include="UnitsNet" />
+  </ItemGroup>
+</Project>

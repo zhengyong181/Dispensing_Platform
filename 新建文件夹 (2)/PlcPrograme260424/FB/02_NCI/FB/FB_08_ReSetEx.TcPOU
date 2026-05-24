@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_08_ReSetEx" Id="{1bb1a6c4-9b8d-462a-b382-f101772495a1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_08_ReSetEx
+VAR_INPUT
+	bExecute:BOOL;
+END_VAR
+VAR_OUTPUT
+	bBusy:BOOL;(*功能块执行忙标志*)
+	bError:BOOL;(*出错*)
+	bDone:BOOL;(*执行完毕*)
+END_VAR
+VAR_IN_OUT
+//	stX:AXIS_REF;
+//	stY:AXIS_REF;
+//	stZ:AXIS_REF;
+	stItpToPlc :NCTOPLC_NCICHANNEL_REF;
+	stPlcToItp:PLCTONC_NCICHANNEL_REF;
+END_VAR
+VAR
+	ResetStep:INT:=0;
+	fbReset:ItpResetEx2;(*启动和停止*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE ResetStep OF
+	0:
+	  IF  bExecute THEN
+		 bBusy:=TRUE;(*FB执行状态*)
+		 bDone:=FALSE;(*FB执行完毕*)
+		 bError:=FALSE;(*报错*)
+		 ResetStep:=10;(*进入10步*) 
+	  END_IF
+	10:
+	  fbReset(
+	    bExecute:= TRUE, 
+	    tTimeOut:=, 
+	    sNciToPlc:= stItpToPlc, 
+	    bBusy=> , 
+	    bErr=> , 
+	    nErrId=> );
+	   IF NOT fbReset.bBusy THEN
+		  IF NOT fbReset.bErr THEN
+			ResetStep:=20;(*进入20步*)  
+		  ELSE
+			bBusy:=FALSE;
+			bError:=TRUE;
+			ResetStep:=999;
+		  END_IF
+		  fbReset(bExecute:= FALSE,sNciToPlc:= stItpToPlc); 
+	    END_IF
+	 20:
+	   bDone:=TRUE;
+       bBusy:=FALSE;   
+	   IF NOT bExecute THEN
+		 ResetStep:=0;
+	   END_IF
+	 999:
+	   IF NOT bExecute THEN		   
+	    ResetStep:=0;
+        bError:=FALSE; 
+	   END_IF
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_08_ReSetEx">
+      <LineId Id="9" Count="0" />
+      <LineId Id="25" Count="7" />
+      <LineId Id="90" Count="5" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="42" Count="7" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="50" Count="10" />
+      <LineId Id="23" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

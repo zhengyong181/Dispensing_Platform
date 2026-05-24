@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AIO" Id="{9b7c0910-2bc6-42ba-ac99-09903af11046}">
+    <Declaration><![CDATA[TYPE ST_AIO :
+STRUCT
+	rAI1				:			REAL			;			// 底部负压表显示
+	rAI2				:			REAL			;			// 针头气压表显示
+	rAI3				:			REAL			;			// 
+	rAI4				:			REAL			;			// 
+	rAI5				:			REAL			;			// 底部负压比例阀反馈
+	rAI6				:			REAL			;			// 针头负压比例阀反馈
+	rAI7				:			REAL			;			// 针头正压比例阀反馈
+	rAI8				:			REAL			;			//
+	rAI9				:			REAL			;			//
+	rAI10				:			REAL			;			//
+	rAI11				:			REAL			;			//
+	rAI12				:			REAL			;			//
+	rAI13				:			REAL			;			//
+	rAI14				:			REAL			;			//
+	rAI15				:			REAL			;			//
+	rAI16				:			REAL			;			//
+	rAI17				:			REAL			;			//
+	rAI18				:			REAL			;			//
+	rAI19				:			REAL			;			//
+	rAI20				:			REAL			;			//
+
+	rAO1				:			REAL			;			// 底部负压比例阀设定
+	rAO2				:			REAL			;			// 针头负压比例阀设定
+	rAO3				:			REAL			;			// 针头正压比例阀设定
+	rAO4				:			REAL			;			//
+	rAO5				:			REAL			;			//
+	rAO6				:			REAL			;			//
+	rAO7				:			REAL			;			//
+	rAO8				:			REAL			;			//
+	rAO9				:			REAL			;			//
+	rAO10				:			REAL			;			//
+	rAO11				:			REAL			;			//
+	rAO12				:			REAL			;			//
+	rAO13				:			REAL			;			//
+	rAO14				:			REAL			;			//
+	rAO15				:			REAL			;			//
+	rAO16				:			REAL			;			//
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

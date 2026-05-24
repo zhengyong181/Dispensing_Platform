@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_03_LoadProg" Id="{44d4397d-3083-4203-98a9-3199437f2df7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_03_LoadProg
+VAR_INPUT
+	bExecute:BOOL;
+	sPrgName:STRING(255);(*G代码链接*)
+//	nXAxisId:UDINT;
+//	nYAxisId:UDINT;
+//	nZAxisId:UDINT;
+END_VAR
+VAR_OUTPUT
+	bBusy:BOOL;(*功能块执行忙标志*)
+	bError:BOOL;(*出错*)
+	bDone:BOOL;(*执行完毕*)
+END_VAR
+VAR_IN_OUT
+//	stX:AXIS_REF;
+//	stY:AXIS_REF;
+//	stZ:AXIS_REF;
+	stItpToPlc :NCTOPLC_NCICHANNEL_REF;
+	stPlcToItp:PLCTONC_NCICHANNEL_REF;
+END_VAR
+VAR
+	LoadProgStep:INT:=0;
+	fbLoadProg:ItpLoadProgEx;(*下载NCI程序*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[sPrgName := Com_GVLS.stIJP.strNciName;
+
+CASE LoadProgStep OF
+	0:
+	  IF  bExecute THEN
+//		  LoadProgDone:=FALSE;
+		  bBusy:=TRUE;(*FB执行状态*)
+		  bDone:=FALSE;(*FB执行完毕*)
+		  bError:=FALSE;(*报错*)
+		  LoadProgStep:=10;(*进入10步*) 
+	  END_IF
+	10:
+	   fbLoadProg(
+	    sNciToPlc:= stItpToPlc, 
+	    bExecute:= TRUE, 
+	    sPrg:= sPrgName, 
+	    nLength:= INT_TO_UDINT(LEN(sPrgName)), 
+	    tTimeOut:= , 
+	    bBusy=> , 
+	    bErr=> , 
+	    nErrId=> );
+	   IF NOT fbLoadProg.bBusy THEN
+		  IF NOT fbLoadProg.bErr THEN
+			LoadProgStep:=20;(*进入20步*)  
+		  ELSE
+			bBusy:=FALSE;
+			bError:=TRUE;
+			LoadProgStep:=999;
+		  END_IF
+		 fbLoadProg(sNciToPlc:= stItpToPlc,bExecute:= FALSE,sPrg:= sPrgName,nLength:= INT_TO_UDINT(LEN(sPrgName)));
+		//fbLoadProg.bExecute:=FALSE;  
+//fbLoadProg(
+	   //  sNciToPlc:= stItpToPlc, 
+	   //  bExecute:= FALSE);
+	    END_IF
+	 20:
+	   bDone:=TRUE;
+       bBusy:=FALSE;  
+//       LoadProgDone:=TRUE; 
+	   IF NOT bExecute THEN
+	//	 fbLoadProg.bExecute:=FALSE;   
+		 LoadProgStep:=0;
+	   END_IF
+	 999:
+	   IF NOT bExecute THEN		   
+	    LoadProgStep:=0;
+        bError:=FALSE; 
+	   END_IF
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_03_LoadProg">
+      <LineId Id="174" Count="1" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="25" Count="1" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="27" Count="5" />
+      <LineId Id="67" Count="7" />
+      <LineId Id="47" Count="8" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="98" Count="1" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="56" Count="3" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="61" Count="5" />
+      <LineId Id="23" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="Enum_ErrorClass" Id="{61fc845a-2932-42ab-9de3-3e20b401e8d3}">
+    <Declaration><![CDATA[TYPE Enum_ErrorClass :
+(
+    NoAlarm                		:=0,					//无警报
+    Message      				:=1,					//信息
+    Event           			:=2,					//事件
+    Reserve3		            :=3,					//预留
+    Reserve4                   	:=4,					//预留
+    Reserve5                   	:=5,					//预留
+    LightError          		:=6,					//轻微报警
+    CriticalError               :=7						//重度报警
+);
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

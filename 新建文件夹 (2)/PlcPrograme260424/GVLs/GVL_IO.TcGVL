@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_IO" Id="{867d2e23-7a0b-477c-a91a-157162460392}">
+    <Declaration><![CDATA[VAR_GLOBAL
+(*X*)
+	X000001  AT%I*:  BOOL;   // 急停
+	X000002  AT%I*:  BOOL;   // X- NO
+	X000003  AT%I*:  BOOL;   // x+ NO
+	X000004  AT%I*:  BOOL;   // Y- NO
+	X000005  AT%I*:  BOOL;   // y+ NO
+	X000006  AT%I*:  BOOL;   // 
+	X000007  AT%I*:  BOOL;   // 
+	X000008  AT%I*:  BOOL;   // Z1+NC 
+	X000009  AT%I*:  BOOL;   // Z1-NC 
+	X000010  AT%I*:  BOOL;   // Z2+NC 
+	X000011  AT%I*:  BOOL;   // Z2-NC 
+	X000012  AT%I*:  BOOL;   // 
+	X000013  AT%I*:  BOOL;   // 
+	X000014  AT%I*:  BOOL;   // 
+	X000015  AT%I*:  BOOL;   // 
+	X000016  AT%I*:  BOOL;   // 
+	
+	X001001  AT%I*:  BOOL;   // R1+ 
+	X001002  AT%I*:  BOOL;   // R1-
+	X001003  AT%I*:  BOOL;   // R2+
+	X001004  AT%I*:  BOOL;   // R2-
+	X001005  AT%I*:  BOOL;   // R3+
+	X001006  AT%I*:  BOOL;   // R3-
+	X001007  AT%I*:  BOOL;   // BUMP+
+	X001008  AT%I*:  BOOL;   // bump-
+	X001009  AT%I*:  BOOL;   // 
+	X001010  AT%I*:  BOOL;   // 
+	X001011  AT%I*:  BOOL;   // 
+	X001012  AT%I*:  BOOL;   // 
+	X001013  AT%I*:  BOOL;   // 
+	X001014  AT%I*:  BOOL;   // 
+	X001015  AT%I*:  BOOL;   // 
+	X001016  AT%I*:  BOOL;   // 
+	
+(*Y*)	
+	Y000001 AT%Q*:  BOOL;   // 针头正负压切换阀
+	Y000002 AT%Q*:  BOOL;   // 
+	Y000003 AT%Q*:  BOOL;   // 
+	Y000004 AT%Q*:  BOOL;   // 气缸开
+	Y000005 AT%Q*:  BOOL;   //	气缸关 
+	Y000006 AT%Q*:  BOOL;   // 	真空破1
+	Y000007 AT%Q*:  BOOL;   //  真空吸1
+	Y000008 AT%Q*:  BOOL;   //  真空破2
+	Y000009 AT%Q*:  BOOL;   //  真空吸2
+	Y000010 AT%Q*:  BOOL;   //  真空吸3
+	Y000011 AT%Q*:  BOOL;   //  真空破3
+	Y000012 AT%Q*:  BOOL;   // 
+	Y000013 AT%Q*:  BOOL;   // 
+	Y000014 AT%Q*:  BOOL;   // 
+	Y000015 AT%Q*:  BOOL;   // 
+	Y000016 AT%Q*:  BOOL;   // 高压输出
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

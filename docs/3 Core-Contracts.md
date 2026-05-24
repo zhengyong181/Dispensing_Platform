@@ -1,6 +1,6 @@
 # 文档 3 — 核心契约与接口骨架（Core-Contracts.md）
 
-> 版本：v0.1 · 最后更新：2026-05-20
+> 版本：v0.2 · 最后更新：2026-05-25
 
 本文定义所有跨模块协作的"语言"：接口、数据模型、事件、错误码。这是项目里最稳定的部分，一旦定下来变更要慎重，因为任何修改都会影响所有上层。
 
@@ -137,6 +137,13 @@ public sealed record MotionParameters(
     Acceleration MaxDeceleration,
     Jerk? MaxJerk = null);
 ```
+
+#### 2.1.1 Beckhoff 当前落地约束（2026-05-25）
+
+- 已落地项目：`src/Hal/DispensingPlatform.Hal.Beckhoff`（程序集 `DispensingPlatform.Hal.Beckhoff`）。
+- 轴类型约束：仅 `Axis3` 为旋转轴；`Axis1/2/4/5/6/7/8/9/10` 全部按直线轴建模。
+- 单位约束：直线轴使用 `Length/Speed/Acceleration/Jerk`，旋转轴使用 `Angle/RotationalSpeed/RotationalAcceleration`。
+- PLC 符号映射基线：`Com_GVLS.arstAxis[*]`（运动轴）、`Com_GVLS.stSystem`（系统状态）、`Com_GVLS.stIJP`（NCI/点胶触发）、`Com_GVLS.stAIO`（模拟量）、`GVL_IO`（数字 IO）。
 
 ### 2.2 IMotionGroup（多轴协调）
 

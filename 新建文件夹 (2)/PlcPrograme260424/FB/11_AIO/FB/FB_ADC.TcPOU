@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_ADC" Id="{465857e0-6959-463e-8a7f-7c18e3d3f073}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ADC
+VAR
+	bFirstRun    :BOOL := TRUE;
+	rAnaIn       :REAL;
+END_VAR
+VAR_INPUT
+	rAnalogIn			:			INT	;		     //模拟量输入      显示表/比例阀反馈
+	rAnalogLowLMT		:			REAL	;		 //模拟量下限值     0
+	rAanlogUpperLMT		:			REAL	;	     //模拟量上限值     32767     
+	rAnalogRef1			:			REAL	;		 //参考点1：       模拟量 例10
+	rDigitalRef1		:			REAL	;		 //参考点1：       数字量 例0.1kpa
+	rAnalogRef2			:			REAL	;		 //参考点2：       模拟量  例5000
+	rDigitalRef2		:			REAL	;		 //参考点2：       数字量  例0.3kpa
+END_VAR
+VAR_OUTPUT
+	rDigitalOut			:			REAL	;		 //数字量显示      上位机显示
+	bError				:			BOOL	;		 //错误
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bFirstRun THEN
+	IF ABS(rAnalogLowLMT) < 0.001 THEN
+		rAnalogLowLMT := -50000.0;
+	END_IF;
+	IF ABS(rAanlogUpperLMT) < 0.001 THEN
+		rAanlogUpperLMT := 50000.0;
+	END_IF;
+END_IF;
+bFirstRun := FALSE;
+
+rAnaIn    :=LIMIT(rAnalogLowLMT, rAnalogIn, rAanlogUpperLMT);
+
+IF 	ABS(rDigitalRef2 - rDigitalRef1) > 0.00001 AND ABS(rAnalogRef2 - rAnalogRef1) > 0.00001 THEN
+	rDigitalOut := (rAnaIn - rAnalogRef1) * (rDigitalRef2 - rDigitalRef1)/(rAnalogRef2 - rAnalogRef1)+ rDigitalRef1;	
+	bError := FALSE;
+ELSE
+	rDigitalOut := 0;
+	bError := TRUE;
+END_IF;
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_ADC">
+      <LineId Id="55" Count="0" />
+      <LineId Id="38" Count="5" />
+      <LineId Id="93" Count="1" />
+      <LineId Id="132" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="50" Count="4" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

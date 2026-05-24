@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_V_3B5" Id="{023e2097-dcbc-40a9-9869-265504106198}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_V_3B5
+VAR_IN_OUT
+	fbstYV:ST_YV;
+	stSystem:ST_System;
+END_VAR
+VAR_INPUT
+	inChannelid:INT;
+END_VAR
+
+VAR
+	tonYVFwCHK:ton;
+	tonYVFwTimeOut:ton;
+	tonYVBwCHK:ton;
+	tonYV1BwTimeOut:ton;
+	arError :ARRAY  [1..4]OF BOOL;
+	i: UINT;
+	arrfbSetAlarm: ARRAY[1..3] OF FB_SetError;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+(********************************************YV1*****************************************)
+//气缸伸出
+fbstYV.bYVFw_Out :=fbstYV.bYVFw_A  ;
+tonYVFwCHK(IN:=fbstYV.bYVFw_Out AND fbstYV.bYVFw_In  , 
+PT:=TIME#5MS ,
+ Q=>fbstYV.bYVFw_OK , 
+ET=> );
+//伸出超时报警
+tonYVFwTimeOut(IN:=fbstYV.bYVFw_Out AND NOT  fbstYV.bYVFw_OK , 
+PT:=TIME#3S , 
+Q=>arError[1] , 
+ET=> );
+
+
+//气缸缩回
+fbstYV.bYVBw_Out :=fbstYV.bYVBw_A ;
+tonYVBwCHK(IN:=fbstYV.bYVBw_Out AND fbstYV.bYVBw_In ,
+ PT:=TIME#5MS ,
+ Q=>fbstYV.bYVBw_OK , 
+ET=> );
+//缩回超时报警
+tonYV1BwTimeOut(IN:=fbstYV.bYVBw_out AND NOT fbstYV.bYVBw_OK ,
+ PT:=TIME#3S , 
+ Q=>arError[2] , 
+ET=> );
+
+IF arError[1]=TRUE THEN
+	fbstYV.bError:=TRUE;
+	fbstYV.udiError:=1;
+	fbstYV.arErrorID[0]:=TRUE;	
+ELSIF arError[2]=TRUE THEN
+	fbstYV.bError:=TRUE;
+	fbstYV.udiError:=2;
+	fbstYV.arErrorID[1]:=TRUE;		
+//同时检测到伸出缩回到位信号
+ELSIF fbstYV.bYVFw_In AND fbstYV.bYVBw_In THEN
+	fbstYV.bError:=TRUE;
+	fbstYV.udiError:=3;
+	fbstYV.arErrorID[2]:=TRUE;	
+ELSE
+	fbstYV.bError:=FALSE;
+    fbstYV.udiError:=0;
+	FOR i:=1 TO 4 BY 1 DO 
+	  fbstYV.arErrorID[i]:=0;		 
+	END_FOR
+END_IF
+// 伸出报错
+arrfbSetAlarm[1](
+	bEnable:= TRUE, 
+	iErrorID:= 90+3*(inChannelid-1), 
+	bExecute:= fbstYV.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Bw_out Alm', 
+	wstrErrorInfoCN:="伸出超时报警" , 
+	enumErrorClass:= 6, 
+    );
+// 伸出报错
+arrfbSetAlarm[1](
+	bEnable:= TRUE, 
+	iErrorID:= 90+3*(inChannelid-1), 
+	bExecute:= fbstYV.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Fw_out Alm', 
+	wstrErrorInfoCN:="缩回超时报警" , 
+	enumErrorClass:= 6, 
+    );
+// 伸出报错
+arrfbSetAlarm[1](
+	bEnable:= TRUE, 
+	iErrorID:= 90+3*(inChannelid-1), 
+	bExecute:= fbstYV.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Fw_BW Alm', 
+	wstrErrorInfoCN:="限位同时触发报警", 
+	enumErrorClass:= 6, 
+    );]]></ST>
+    </Implementation>
+    <LineIds Name="FB_V_3B5">
+      <LineId Id="375" Count="0" />
+      <LineId Id="212" Count="16" />
+      <LineId Id="282" Count="2" />
+      <LineId Id="229" Count="5" />
+      <LineId Id="254" Count="2" />
+      <LineId Id="437" Count="0" />
+      <LineId Id="257" Count="2" />
+      <LineId Id="438" Count="0" />
+      <LineId Id="261" Count="2" />
+      <LineId Id="439" Count="0" />
+      <LineId Id="264" Count="2" />
+      <LineId Id="421" Count="0" />
+      <LineId Id="440" Count="1" />
+      <LineId Id="424" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="453" Count="8" />
+      <LineId Id="300" Count="0" />
+      <LineId Id="472" Count="8" />
+      <LineId Id="471" Count="0" />
+      <LineId Id="482" Count="8" />
+      <LineId Id="481" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

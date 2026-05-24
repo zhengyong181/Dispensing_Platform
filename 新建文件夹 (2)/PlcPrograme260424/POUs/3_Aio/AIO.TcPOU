@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="AIO" Id="{50388997-4b60-40b1-bdea-1215a3307555}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM AIO
+VAR
+	fbAdc:ARRAY[1..2,1..4] OF FB_ADC;	
+	fbDac:ARRAY[1..2,1..4] OF FB_DAC;
+	ro2:REAL;
+	ro3:REAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*ACT*)
+AD();
+DA();
+]]></ST>
+    </Implementation>
+    <Action Name="AD" Id="{f82dfaa1-92bf-4ff8-881e-8dc6e6885137}">
+      <Implementation>
+        <ST><![CDATA[(*A-D*)	
+(**)
+//底部负压显示表  0   -101kap
+fbAdc[1,1]
+    (
+	rAnalogIn:=        AX_1[1] , 
+	rAnalogLowLMT:=    REAL#0 , 
+	rAanlogUpperLMT:=  REAL#16000, 
+	rAnalogRef1:=      REAL#14870, 
+	rDigitalRef1:=     REAL#-90, 
+	rAnalogRef2:=      REAL#6850, 
+	rDigitalRef2:=     REAL#-27.7, 
+	rDigitalOut=>      stAIO.rAI1 , 
+    );
+//针头正负压显示表   -0.1  1.0Mpa
+fbAdc[1,2]
+    (
+	rAnalogIn:=        AX_1[2] , 
+	rAnalogLowLMT:=    REAL#10 , 
+	rAanlogUpperLMT:=  REAL#32700, 
+	rAnalogRef1:=      REAL#4541, 
+	rDigitalRef1:=     REAL#97, 
+	rAnalogRef2:=      REAL#3896, 
+	rDigitalRef2:=     REAL#47, 
+	rDigitalOut=>      stAIO.rAI2 , 
+    );
+
+(*
+//针头负压比例阀反馈	
+fbAdc[2,2]
+    (
+	rAnalogIn:=        AX_2[2] , 
+	rAnalogLowLMT:=    REAL#10 , 
+	rAanlogUpperLMT:=  REAL#32700, 
+	rAnalogRef1:=      REAL#3384, 
+	rDigitalRef1:=     REAL#0, 
+	rAnalogRef2:=      REAL#6345, 
+	rDigitalRef2:=     REAL#-20, 
+	rDigitalOut=>      stAIO.rAI6 , 
+    );	
+//针头正压比例阀反馈
+fbAdc[2,3]
+    (
+	rAnalogIn:=        AX_2[3] , 
+	rAnalogLowLMT:=    REAL#0 , 
+	rAanlogUpperLMT:=  REAL#32700, 
+	rAnalogRef1:=      REAL#2368, 
+	rDigitalRef1:=     REAL#200, 
+	rAnalogRef2:=      REAL#1716, 
+	rDigitalRef2:=     REAL#150, 
+	rDigitalOut=>      stAIO.rAI7 , 
+    );	
+*)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="DA" Id="{2b58ef6a-d5bf-49ea-8a61-bc42d4b99756}">
+      <Implementation>
+        <ST><![CDATA[(*D-A*)	
+//针头正压比例阀 ITV0090-3BL -1--100kpa
+IF NOT stIJP.bEx_Trig AND  NOT stIJP.bEx_TrigH THEN
+	ro2:= stAIO.rAO2;
+ELSE
+	ro2:= 0	;
+END_IF
+fbDac[1,2]
+    (
+	rDigitalIn:=     ro2 , 
+	rAnalogLowLMT:=   REAL#0, 
+	rAanlogUpperLMT:= REAL#32767, 
+	rAnalogRef1:=     REAL#6149, 
+	rDigitalRef1:=    REAL#-15 , 
+	rAnalogRef2:=     REAL#9951, 
+	rDigitalRef2:=    REAL#-27, 
+	rAnalogOut=>      AY_1[2] , 
+    );
+
+//AY_1[2]:=0;
+//针头正压比例阀  ITV-0030-3BL  0.001-0.5MPA 1-500kpa
+IF stIJP.bEx_Trig AND  stIJP.bEx_TrigH THEN
+	ro3:= stAIO.rAO3;
+ELSE
+	ro3:= 0	;
+END_IF
+fbDac[1,3]
+    (
+	rDigitalIn:=      ro3, 
+	rAnalogLowLMT:=   REAL#0 , 
+	rAanlogUpperLMT:= REAL#32767, 
+	rAnalogRef1:=     REAL#3031, 
+	rDigitalRef1:=    REAL#46 , 
+	rAnalogRef2:=     REAL#10193, 
+	rDigitalRef2:=    REAL#154, 
+	rAnalogOut=>      AY_1[3] , 
+    );
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="AIO">
+      <LineId Id="19" Count="2" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="AIO.AD">
+      <LineId Id="11" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="33" Count="7" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="146" Count="0" />
+      <LineId Id="47" Count="7" />
+      <LineId Id="145" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="78" Count="0" />
+      <LineId Id="112" Count="9" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="122" Count="9" />
+      <LineId Id="83" Count="18" />
+    </LineIds>
+    <LineIds Name="AIO.DA">
+      <LineId Id="12" Count="0" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="127" Count="1" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="15" Count="9" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="113" Count="0" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="130" Count="3" />
+      <LineId Id="115" Count="0" />
+      <LineId Id="26" Count="9" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="52" Count="14" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

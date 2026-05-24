@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="POS_Comparition" Id="{d9ece25e-1ad1-47ae-9f0c-1b04546361ef}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM POS_Comparition
+VAR
+	fbPOS_ComparitionXY:FB_013_POS_Comparition;
+	fbPOS_ComparitionZR:FB_013_POS_Comparition;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// XY位置比较
+fbPOS_ComparitionXY(arstCamCtrl:=arstCamCtrlIO, fbstIJP:=stIJP , stAxis:=arstAxis );
+]]></ST>
+    </Implementation>
+    <LineIds Name="POS_Comparition">
+      <LineId Id="12" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

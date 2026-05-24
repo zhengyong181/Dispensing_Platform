@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="ProgGear" Id="{8d558c8a-156b-42af-9a54-17b07fdd7fd1}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM ProgGear
+VAR
+	fbGear:ARRAY[1..2] OF FB_Gear;
+	i:UINT;
+	GearTrig:R_TRIG;
+	PlatY_TO_RollR1Rtrig:R_TRIG;
+	RollY1_TO_RollYRtrig:R_TRIG;
+	RollZ1_TO_RollZ2Rtrig:R_TRIG;
+	RollR1_TO_RollR2Rtrig:R_TRIG;
+	PlatY_TO_RollR1Ftrig:F_TRIG;
+	RollY1_TO_RollYFtrig:F_TRIG;
+	RollZ1_TO_RollZ2Ftrig:F_TRIG;
+	RollR1_TO_RollR2Ftrig:F_TRIG;
+	mcGearInDyn			:MC_GearInDyn;	
+	mcGearOut			:MC_GearOut;
+	bTest				:BOOL;
+	bTestOut			:BOOL;
+	rRatio				:LREAL:=1.0;
+	mcMoveVel			:MC_MoveVelocity;
+	bExe				:BOOL;
+	blink				:BLINK;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[A_01_R1_TO_R2();
+A_01_R1_TO_R3();
+
+
+	
+	
+]]></ST>
+    </Implementation>
+    <Action Name="A_01_R1_TO_R2" Id="{070d2f01-bd3a-4070-aacf-c58f516fd9ac}">
+      <Implementation>
+        <ST><![CDATA[// 轴基础参数设定
+arstGear[1].wstrName:=" 喷头R1轴与R2轴耦合" ;
+arstGear[1].rSyncVelocity:=arstAxis[7].Pos.Par.rVel;
+arstGear[1].rSyncACC:=arstAxis[7].Pos.Par.rAcc;
+arstGear[1].rRatioNumerator:=1;
+arstGear[1].uiRatioDenominator:=1;
+arstGear[1].bStop_A:=arstAxis[7].Control.bStop_A;
+// 功能块
+fbGear[1](AxisRefSlave:=arAxis[8] ,AxisRefMaster:=arAxis[7],stSystem:=stSystem,stGear:=arstGear[1] , inChannelid:=1 );
+
+
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_01_R1_TO_R3" Id="{5ac2e556-71ee-4517-9b20-85a8fba4a6c5}">
+      <Implementation>
+        <ST><![CDATA[// 轴基础参数设定
+arstGear[2].wstrName:=" 喷头R1轴与R3轴耦合" ;
+arstGear[2].rSyncVelocity:=arstAxis[7].Pos.Par.rVel;
+arstGear[2].rSyncACC:=arstAxis[7].Pos.Par.rAcc;
+arstGear[2].rRatioNumerator:=1;
+arstGear[2].uiRatioDenominator:=1;
+arstGear[2].bStop_A:=arstAxis[7].Control.bStop_A;
+// 功能块
+fbGear[2](AxisRefSlave:=arAxis[9] ,AxisRefMaster:=arAxis[7],stSystem:=stSystem,stGear:=arstGear[2] , inChannelid:=2 );
+
+
+]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="ProgGear">
+      <LineId Id="321" Count="2" />
+      <LineId Id="395" Count="2" />
+      <LineId Id="210" Count="0" />
+    </LineIds>
+    <LineIds Name="ProgGear.A_01_R1_TO_R2">
+      <LineId Id="2" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="28" Count="1" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="67" Count="0" />
+    </LineIds>
+    <LineIds Name="ProgGear.A_01_R1_TO_R3">
+      <LineId Id="2" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="28" Count="1" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="67" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

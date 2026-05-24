@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="Com_GVLS" Id="{a80ec475-579f-4cc7-b679-ff812b23f8d6}">
+    <Declaration><![CDATA[
+VAR_GLOBAL
+   (* 结构体申明*)
+   stSystem          : ST_System:=(strDeviceName:='EHD');
+   arstAxis            : ARRAY[1..10] OF ST_Axis;  
+   stIJP             : ST_IJP     := (strNciName:='C:\NC\1.nc',lrOverrideSet := LREAL#100);   
+   stAIO             : ST_AIO;   
+   stLightCtr        : ST_LightCtr;
+   arstCamCtrlIO       : ARRAY[1..100] OF ST_EL5131_CamCtrl; //1-X轴 2-Y轴
+   bPlatformVacON    :BOOL       :=FALSE;(*真空吸附*)
+   bPlatformVacOff   :BOOL       :=FALSE;
+   arstHomeADS          :ARRAY[1..10] OF ST_HomeAdsGroup;
+   arstHomeCoE          :ARRAY[1..10] OF ST_HomeCoEGroup;
+   arstYV					: ARRAY[1..15] OF ST_YV; //所有气缸定义   
+   arstVac				:ARRAY[1..15] OF ST_Vacuum; //所有真空定义
+   stPump				:ST_Pump;
+   arstGear           :ARRAY[1..2] OF ST_Gear;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

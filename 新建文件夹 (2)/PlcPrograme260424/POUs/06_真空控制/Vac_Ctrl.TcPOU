@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="Vac_Ctrl" Id="{b4ee8d84-c47f-41eb-8d8b-f0b2e844f0f1}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM Vac_Ctrl
+VAR
+    Vacuums     : ARRAY[1..4] OF ST_Vacuum;
+    VacuumFB    : ARRAY[1..4] OF FB_VacuumControl;
+    bResetAll   : BOOL;
+    i           : INT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+
+
+
+
+
+(* 输出 *)
+//Y000212 := stVac[1].qVacuumValve;
+//Y000213 := stVac[1].qReleaseValve;
+//Y000214 := stVac[2].qVacuumValve;
+//Y000215 := stVac[2].qReleaseValve;
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="Vac_Ctrl">
+      <LineId Id="38" Count="0" />
+      <LineId Id="312" Count="0" />
+      <LineId Id="191" Count="0" />
+      <LineId Id="239" Count="0" />
+      <LineId Id="237" Count="0" />
+      <LineId Id="236" Count="0" />
+      <LineId Id="212" Count="4" />
+      <LineId Id="190" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="217" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisState" Id="{a548588d-f632-4c32-b2b8-51d882612932}">
+    <Declaration><![CDATA[TYPE ST_AxisState :
+STRUCT
+	uiNodeAddr									:UINT									;			//从站节点地址		
+	rActModuloPos								:REAL									;			//实际位置-模轴位置
+	rActPos										:REAL									;			//实际位置-线性位置
+	rActVel										:REAL									;			//实际速度	
+	rActAcc										:REAL									;			//实际加速度	
+	rActTrq										:REAL									;			//实际扭矩	
+	bDirPositive								:BOOL									;			//正向运动标志	
+	bDirNegative								:BOOL									;			//负向运动标志	
+	bPowerOK									:BOOL									;			//使能完成	
+	bHoming										:BOOL									;			//回零中	
+	bHome_OK									:BOOL									;			//回零完成	
+	siModeOfOperation						    :SINT					                ;		    //  驱动器输出PLC工作模式，传递给PLC的工作模式	
+	bPSw										:BOOL									;			//正极限	
+	bNSw										:BOOL									;			//负极限	
+	bHSw										:BOOL									;			//原点开关	
+	bStandStill									:BOOL									;			//停止中
+	bMoving										:BOOL									;			//移动中
+	bHasJob                                     :BOOL									;			//工作中
+	bInSync										:BOOL									;			//耦合中	
+	bError										:BOOL									;			//报错
+	bWarning									:BOOL									;			//警告
+	bLightEror									:BOOL									;			//轻量错误
+	bCriticalError								:BOOL									;			//严重错误
+	arErrorID									:ARRAY[1..12] OF BOOL					;			//错误ID
+	udiNCErrorID								:UDINT									;			//NC ErrorID
+	uiDriveErrorCode							:UINT									;			//驱动器报警代码
+END_STRUCT	
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

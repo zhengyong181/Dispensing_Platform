@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_011WriteRParameter" Id="{96ae41d8-aad3-443f-b1ad-b24402477985}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_011WriteRParameter
+
+VAR_INPUT
+	Execute:BOOL;
+	fbnChannelid:UDINT;
+	nRParamAry:ARRAY[0..19] OF LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	fbWriteRParams:ItpWriteRParams;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+fbWriteRParams(
+	bExecute:= Execute, 
+	nChnId:= fbnChannelid, 
+	pAddr:= ADR(nRParamAry), 
+	nIndex:= 0, 
+	nCount:= 10, 
+	tTimeOut:= T#2S, 
+	bBusy=> , 
+	bErr=> , 
+	nErrId=> );
+	]]></ST>
+    </Implementation>
+    <LineIds Name="FB_011WriteRParameter">
+      <LineId Id="3" Count="9" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="27" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

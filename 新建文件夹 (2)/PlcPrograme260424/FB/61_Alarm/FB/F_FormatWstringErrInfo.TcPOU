@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="F_FormatWstringErrInfo" Id="{33833b67-c524-4835-a60f-b340091d98f8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION F_FormatWstringErrInfo : WSTRING
+FUNCTION F_FormatWstringErrInfo : BOOL
+VAR_INPUT
+	wstrIn:			WSTRING;
+	// 前缀
+	wstrPreMessage: WSTRING;
+	// 后缀
+	diMessage:					DINT;
+END_VAR
+VAR_OUTPUT
+	wstrOut:			WSTRING;
+END_VAR
+VAR
+	strVersion: STRING;
+	iVar0: INT;
+	iVar1: INT;
+	iVar2: DINT;
+	wstrTemp: WSTRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(***
+by Yu
+	
+	2025-07-23	实现对信息的组合,前缀为 WSTRING 变量，后缀添加 DINT 型变量。可用于添加 轴名称-报警信息-报警代码 。
+
+***)
+//当前版本更新时间
+strVersion := '2025-07-23' ;
+
+//
+iVar0:=WLEN(wstrIn);
+iVar1:=WLEN(wstrPreMessage);
+iVar2:=diMessage;
+
+IF iVar1 <>0 AND iVar2 <>0 THEN
+	wstrTemp := WCONCAT(wstrPreMessage,wstrIn);
+	wstrOut := WCONCAT(wstrtemp,DINT_TO_WSTRING(diMessage));
+ELSIF iVar1 = 0 AND iVar2 <> 0  THEN
+	wstrOut := WCONCAT(wstrIn,DINT_TO_WSTRING(diMessage));
+ELSIF iVar1 <>0 AND iVar2 =0 THEN
+	wstrOut := WCONCAT(wstrPreMessage,wstrIn);	
+ELSE
+	wstrOut := wstrIn;
+END_IF
+]]></ST>
+    </Implementation>
+    <LineIds Name="F_FormatWstringErrInfo">
+      <LineId Id="25" Count="23" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

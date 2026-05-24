@@ -1,0 +1,565 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="AxisLink" Id="{77a28691-4314-4e66-b486-edd67516b3ab}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM AxisLink
+VAR
+	fbAxis    :ARRAY[1..10] OF FB_Axis;//根据轴数量定义数组
+	bFirstRun :BOOL;                  //上电初始化轴参数
+	i         :INT;                   //用于轴报错
+	fbAxisPECorect:ARRAY[1..2] OF FB_Axis_PE_Correct;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*****************************************************************
+1.轴PROG程序进行默认参数初始化并进行块调用及转system报错ID
+
+2.	bPowerOn		     	// 伺服使能，置1操作,无自复位
+    bHome_A				    // 回零,置1操作,无自复位
+	bJogCw_A		        // 连续运动正向,上升沿作用,无自复位
+	bJogCcw_A			    // 连续运动负向,上升沿作用,无自复位		
+	bRelMove_A              // 相对移动,,上升沿作用,无自复位	
+	bAbsMove_A              // 绝对移动,上升沿作用,无自复位	
+	bStop_A				    // 自动停止,上升沿作用,自复位			
+	bHomeStop               // 回零停止,上升沿作用,自复位	
+	bReset_A			    // 复位,上升沿作用,自复位
+	
+3.	nCtrl1                  // link NC参数 --驱动回零轴，NC和驱动controlword通过程序关联 }
+	nCtrl2                  // link NC参数 --驱动回零轴，NC和驱动controlword通过程序关联 }--控制字回零用
+	ControlWord             // link PDO -- 6040,控制字                                   }
+	ModeOfOperation         // link PDO -- 6060,模式切换
+	iTorque                 // 设定扭矩 -- 6071,设定扭矩 
+
+4.  uiMaxTorque 			// 最大扭矩     6072   onlineCOE,单位%
+ 	udiMaxVel 			    // 最大扭矩     607F   onlineCOE,单位P
+ 	HomeMethod              // 回零方法     6098   onlineCOE
+    HomeOffset              // 回零偏置     607C   onlineCOE,单位P
+ 	HomSwitchVelo           // 驱动寻Z速度  6099.2 onlineCOE,单位P
+  
+5.	ModeOfOperationdis      // Readcoe-- 6061,控制模式反馈
+	ActTorque 			    // Readcoe--6077 读取驱动器实际力矩 
+	ErrorCode               // Readcoe-- 603F读取驱动器错误码   
+	StatusWord              // Readcoe-- 6041 回零程序中驱动器状态字
+	
+6.  探针回零不使用上述2-5项配置
+*****************************************************************)
+(* 参数初始化*)
+posEdgeFirstRun(CLK:=NOT bFirstRun);
+IF posEdgeFirstRun.Q AND bFirstRun  =FALSE THEN;
+arstAxis[1].Parameter.bAbsEnc:=FALSE;
+arstAxis[1].Parameter.uiHomeMode:=8;
+arstAxis[1].Parameter.bHmDir:=TRUE;
+arstAxis[1].Parameter.sthomeViaDrivePar.diHomeOffset:=0;
+//arstAxis[1].Parameter.sthomeViaDrivePar.siHomeMethod:=34;
+arstAxis[1].Parameter.sthomeViaDrivePar.udiHomeVelHigh:=10;
+arstAxis[1].Parameter.sthomeViaDrivePar.udiHomeVelLow:=5;
+arstAxis[1].Parameter.sthomeViaDrivePar.udiHomeAcc:=3000;
+arstAxis[1].Control.bHome_Con:=TRUE;
+arstAxis[1].Parameter.rHmVel:=20;
+arstAxis[1].Parameter.rJogVel_A:=100;
+arstAxis[1].Parameter.rJogAcc_A:=3000;
+arstAxis[1].Parameter.rJogDec_A:=3000;
+arstAxis[1].Parameter.rStopDec:=30000;
+arstAxis[1].Parameter.rStopJerk:=arstAxis[1].Parameter.rStopDec*50;
+arstAxis[1].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[1].Control.bJogCw_Con:=TRUE;
+arstAxis[1].Control.bJogCcw_Con:=TRUE;
+arstAxis[1].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[1].Parameter.rInPosValue:=0.01;  // 到位阈值
+arstAxis[1].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[1].Parameter.sthomeViaDrivePar.rHomeVelHigh:=10.0;
+arstAxis[1].Parameter.sthomeViaDrivePar.rHomeVelLow:=5.0;
+
+arstAxis[2].Parameter.bAbsEnc:=FALSE;
+arstAxis[2].Parameter.uiHomeMode:=8;
+arstAxis[2].Parameter.bHmDir:=TRUE;
+arstAxis[2].Parameter.sthomeViaDrivePar.diHomeOffset:=0;
+//arstAxis[2].Parameter.sthomeViaDrivePar.siHomeMethod:=34;
+arstAxis[2].Parameter.sthomeViaDrivePar.udiHomeVelHigh:=10;
+arstAxis[2].Parameter.sthomeViaDrivePar.udiHomeVelLow:=5;
+arstAxis[2].Parameter.sthomeViaDrivePar.udiHomeAcc:=3000;
+arstAxis[2].Control.bHome_Con:=TRUE;
+arstAxis[2].Parameter.rHmVel:=20;
+arstAxis[2].Parameter.rJogVel_A:=100;
+arstAxis[2].Parameter.rJogAcc_A:=3000;
+arstAxis[2].Parameter.rJogDec_A:=3000;
+arstAxis[2].Parameter.rStopDec:=30000;
+arstAxis[2].Parameter.rStopJerk:=arstAxis[2].Parameter.rStopDec*10;
+arstAxis[2].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[2].Control.bJogCw_Con:=TRUE;
+arstAxis[2].Control.bJogCcw_Con:=TRUE;
+arstAxis[2].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[2].Parameter.rInPosValue:=0.01;  // 到位阈值
+arstAxis[2].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[2].Parameter.sthomeViaDrivePar.rHomeVelHigh:=10.0;
+arstAxis[2].Parameter.sthomeViaDrivePar.rHomeVelLow:=5.0;
+
+arstAxis[3].Parameter.bAbsEnc:=FALSE;
+arstAxis[3].Parameter.uiHomeMode:=0;
+arstAxis[3].Parameter.bHmDir:=TRUE;
+arstAxis[3].Control.bHome_Con:=TRUE;
+arstAxis[3].Parameter.rHmVel:=20;
+arstAxis[3].Parameter.rJogVel_A:=30;
+arstAxis[3].Parameter.rJogAcc_A:=300;
+arstAxis[3].Parameter.rJogDec_A:=300;
+arstAxis[3].Parameter.rStopDec:=20000;
+arstAxis[3].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;
+arstAxis[3].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[3].Control.bJogCw_Con:=TRUE;
+arstAxis[3].Control.bJogCcw_Con:=TRUE;
+arstAxis[3].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[3].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[3].Parameter.sthomeViaDrivePar.rHomeVelHigh:=2.0;
+arstAxis[3].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;
+
+arstAxis[4].Parameter.bAbsEnc:=FALSE;
+arstAxis[4].Parameter.uiHomeMode:=0;
+arstAxis[4].Parameter.bHmDir:=TRUE;
+arstAxis[4].Control.bHome_Con:=TRUE;
+arstAxis[4].Parameter.rHmVel:=20;
+arstAxis[4].Parameter.rJogVel_A:=30;
+arstAxis[4].Parameter.rJogAcc_A:=300;
+arstAxis[4].Parameter.rJogDec_A:=300;
+arstAxis[4].Parameter.rStopDec:=20000;
+arstAxis[4].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;
+arstAxis[4].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[4].Control.bJogCw_Con:=TRUE;
+arstAxis[4].Control.bJogCcw_Con:=TRUE;
+arstAxis[4].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[4].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[4].Parameter.sthomeViaDrivePar.rHomeVelHigh:=2.0;
+arstAxis[4].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;
+
+arstAxis[5].Parameter.bAbsEnc:=FALSE;
+arstAxis[5].Parameter.uiHomeMode:=0;
+arstAxis[5].Parameter.bHmDir:=TRUE;
+arstAxis[5].Control.bHome_Con:=TRUE;
+arstAxis[5].Parameter.rHmVel:=20;
+arstAxis[5].Parameter.rJogVel_A:=30;
+arstAxis[5].Parameter.rJogAcc_A:=300;
+arstAxis[5].Parameter.rJogDec_A:=300;
+arstAxis[5].Parameter.rStopDec:=20000;
+arstAxis[5].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;
+arstAxis[5].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[5].Control.bJogCw_Con:=TRUE;
+arstAxis[5].Control.bJogCcw_Con:=TRUE;
+arstAxis[5].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[5].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[5].Parameter.sthomeViaDrivePar.rHomeVelHigh:=2.0;
+arstAxis[5].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;
+
+arstAxis[6].Parameter.bAbsEnc:=TRUE;
+arstAxis[6].Parameter.uiHomeMode:=0;
+arstAxis[6].Parameter.bHmDir:=TRUE;
+arstAxis[6].Control.bHome_Con:=TRUE;
+arstAxis[6].Parameter.rHmVel:=20;
+arstAxis[6].Parameter.rJogVel_A:=30;
+arstAxis[6].Parameter.rJogAcc_A:=300;
+arstAxis[6].Parameter.rJogDec_A:=300;
+arstAxis[6].Parameter.rStopDec:=20000;
+arstAxis[6].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;
+arstAxis[6].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[6].Control.bJogCw_Con:=TRUE;
+arstAxis[6].Control.bJogCcw_Con:=TRUE;
+arstAxis[6].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[6].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[6].Parameter.sthomeViaDrivePar.rHomeVelHigh:=2.0;
+arstAxis[6].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;
+
+arstAxis[7].Parameter.bAbsEnc:=FALSE;
+arstAxis[7].Parameter.uiHomeMode:=0;
+arstAxis[7].Parameter.bHmDir:=TRUE;
+arstAxis[7].Control.bHome_Con:=TRUE;
+arstAxis[7].Parameter.rHmVel:=20;
+arstAxis[7].Parameter.rJogVel_A:=30;
+arstAxis[7].Parameter.rJogAcc_A:=300;
+arstAxis[7].Parameter.rJogDec_A:=300;
+arstAxis[7].Parameter.rStopDec:=20000;
+arstAxis[7].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;
+arstAxis[7].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[7].Control.bJogCw_Con:=TRUE;
+arstAxis[7].Control.bJogCcw_Con:=TRUE;
+arstAxis[7].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[7].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[7].Parameter.sthomeViaDrivePar.rHomeVelHigh:=2.0;
+arstAxis[7].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;
+arstAxis[7].Parameter.uiAxisChannelNum:=1;
+
+
+arstAxis[8].Parameter.bAbsEnc:=FALSE;
+arstAxis[8].Parameter.uiHomeMode:=0;
+arstAxis[8].Parameter.bHmDir:=TRUE;
+arstAxis[8].Control.bHome_Con:=TRUE;
+arstAxis[8].Parameter.rHmVel:=20;
+arstAxis[8].Parameter.rJogVel_A:=30;
+arstAxis[8].Parameter.rJogAcc_A:=300;
+arstAxis[8].Parameter.rJogDec_A:=300;
+arstAxis[8].Parameter.rStopDec:=20000;
+arstAxis[8].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;
+arstAxis[8].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;
+arstAxis[8].Control.bJogCw_Con:=TRUE;
+arstAxis[8].Control.bJogCcw_Con:=TRUE;
+arstAxis[8].Pos.Ctrl.bGo_Con:=TRUE;
+arstAxis[8].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;
+arstAxis[8].Parameter.sthomeViaDrivePar.rHomeVelHigh:=2.0;
+arstAxis[8].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;
+arstAxis[8].Parameter.uiAxisChannelNum:=2;
+
+arstAxis[9].Parameter.bAbsEnc:=FALSE;                                        
+arstAxis[9].Parameter.uiHomeMode:=0;                                         
+arstAxis[9].Parameter.bHmDir:=TRUE;                                          
+arstAxis[9].Control.bHome_Con:=TRUE;                                         
+arstAxis[9].Parameter.rHmVel:=20;                                            
+arstAxis[9].Parameter.rJogVel_A:=30;                                         
+arstAxis[9].Parameter.rJogAcc_A:=300;                                        
+arstAxis[9].Parameter.rJogDec_A:=300;                                        
+arstAxis[9].Parameter.rStopDec:=20000;                                        
+arstAxis[9].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;          
+arstAxis[9].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;                  
+arstAxis[9].Control.bJogCw_Con:=TRUE;                                        
+arstAxis[9].Control.bJogCcw_Con:=TRUE;                                       
+arstAxis[9].Pos.Ctrl.bGo_Con:=TRUE;                                          
+arstAxis[9].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;                    
+arstAxis[9].Parameter.sthomeViaDrivePar.rHomeVelHigh:=2.0;                   
+arstAxis[9].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;                    
+arstAxis[9].Parameter.uiAxisChannelNum:=3;
+
+arstAxis[10].Parameter.bAbsEnc:=FALSE;                                       
+arstAxis[10].Parameter.uiHomeMode:=0;                                        
+arstAxis[10].Parameter.bHmDir:=TRUE;                                         
+arstAxis[10].Control.bHome_Con:=TRUE;                                        
+arstAxis[10].Parameter.rHmVel:=1;                                           
+arstAxis[10].Parameter.rJogVel_A:=1;                                        
+arstAxis[10].Parameter.rJogAcc_A:=10;                                       
+arstAxis[10].Parameter.rJogDec_A:=10;                                       
+arstAxis[10].Parameter.rStopDec:=100;                                       
+arstAxis[10].Parameter.rStopJerk:=arstAxis[3].Parameter.rStopDec*20;         
+arstAxis[10].Parameter.sthomeViaDrivePar.ModeOfOperation:=8;                 
+arstAxis[10].Control.bJogCw_Con:=TRUE;                                       
+arstAxis[10].Control.bJogCcw_Con:=TRUE;                                      
+arstAxis[10].Pos.Ctrl.bGo_Con:=TRUE;                                         
+arstAxis[10].Parameter.sthomeViaDrivePar.rHomeOffset:=0.0;                   
+arstAxis[10].Parameter.sthomeViaDrivePar.rHomeVelHigh:=1.0;                  
+arstAxis[10].Parameter.sthomeViaDrivePar.rHomeVelLow:=1.0;                   
+
+// 轴parameter地址
+arstHomeADS[1].nCalibrationVel:=16#4001;
+arstHomeADS[1].nHomeInfo:=16#5001;
+arstHomeADS[2].nCalibrationVel:=16#4002;
+arstHomeADS[2].nHomeInfo:=16#5002;
+arstHomeADS[3].nCalibrationVel:=16#4003;
+arstHomeADS[3].nHomeInfo:=16#5003;
+arstHomeADS[4].nCalibrationVel:=16#4004;
+arstHomeADS[4].nHomeInfo:=16#5004;
+arstHomeADS[5].nCalibrationVel:=16#4005;
+arstHomeADS[5].nHomeInfo:=16#5005;
+arstHomeADS[6].nCalibrationVel:=16#4006;
+arstHomeADS[6].nHomeInfo:=16#5006;
+
+arstHomeADS[7].nCalibrationVel:=16#4007;
+arstHomeADS[7].nHomeInfo:=16#5007;
+
+arstHomeADS[8].nCalibrationVel:=16#4008;
+arstHomeADS[8].nHomeInfo:=16#5008;
+
+arstHomeADS[9].nCalibrationVel:=16#4009;
+arstHomeADS[9].nHomeInfo:=16#5009;
+
+arstHomeADS[10].nCalibrationVel:=16#400A;
+arstHomeADS[10].nHomeInfo:=16#500A;
+
+bFirstRun             :=TRUE;
+END_IF
+(* 轴块调用*)
+A_01_AX();
+A_02_AY();
+A_03_AR();
+A_04_AZ1();
+A_05_AZ2();
+A_06_APin();
+A_07_R1();
+A_08_R2();
+A_09_R3();
+A_10_Bump();
+(* 轴补偿调用*)
+fbAxisPECorect[1](
+	AxisRef:= arAXIS[1], 
+	arstPitchTable:= stXPitchTable, 
+	bEnable:= , 
+	bAxisHomeOK:= arstAxis[1].State.bHome_OK, 
+	bBacklashDir:= , 
+	rBcaklash:= , 
+	rDistance:= 0, 
+	lrCurBacklash=> , 
+	lrCOmpensation=> , 
+	bBusy=> , 
+	bError=> );
+(* 轴补偿调用*)
+fbAxisPECorect[2](
+	AxisRef:= arAXIS[2], 
+	arstPitchTable:= stYPitchTable, 
+	bEnable:= , 
+	bAxisHomeOK:= arstAxis[2].State.bHome_OK, 
+	bBacklashDir:= , 
+	rBcaklash:= , 
+	rDistance:= 0, 
+	lrCurBacklash=> , 
+	lrCOmpensation=> , 
+	bBusy=> , 
+	bError=> );]]></ST>
+    </Implementation>
+    <Action Name="A_01_AX" Id="{372f09d2-8c9b-40ed-89ee-cf209d561c7f}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+// 限位默认常闭，常开需要取反,白色常开/黑色常闭
+// 轴基础参数设定
+arstAxis[1].wstrName:=" 喷涂X轴" ;
+arstAxis[1].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';//arAXIS[1].DriveAddress.NetID;
+//arstAxis[1].uiSlaveAddr; 通过drive-infoData-AMSNETID-PORT关联;
+arstAxis[1].State.bNSw:= NOT  X000002 ;// PM-l25倍福接黑线，pmac接黑线 
+arstAxis[1].State.bPSw:= NOT  X000003 ;
+
+
+// 力矩
+//stAxis[1].Parameter.uiMaxTorque:=800;
+// 功能块
+fbAxis[1](AxisRef:=arAXIS[1] , stAxis:=arstAxis[1] ,stHomeADS:=arstHomeADS[1], stHomeCoe:=arstHomeCoE[1],stSystem:=stSystem );
+
+	 
+	 ]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_02_AY" Id="{d0c01b8a-8c54-44d9-b10e-149620c86992}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[2].wstrName:=" 喷涂Y轴" ;
+arstAxis[2].strNetID:=stSystem.strNetID;///'192.168.1.50.2.1';
+//stAxis[2].Parameter.uiSlaveAddr:=1012;通过drive-infoData-AMSNETID-PORT关联;
+arstAxis[2].State.bNSw:=NOT X000004 ;// NC-White
+arstAxis[2].State.bPSw:=NOT X000005 ;//
+//false=etercat
+// 功能块
+fbAxis[2](AxisRef:=arAXIS[2] , stAxis:=arstAxis[2] , stSystem:=stSystem , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[2]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_03_AR" Id="{bc010f8e-3037-4adf-bef4-798b9be2e9f2}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[3].wstrName:=" 喷涂R轴" ;
+arstAxis[3].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[3].Parameter.uiSlaveAddr:=1014;通过drive-infoData-AMSNETID-PORT关联;
+arstAxis[3].State.bNSw:= X000014 ;// NC-White
+//stAxis[3].State.bHSW:= X000013;
+arstAxis[3].State.bPSw:= X000013 ;//
+//false=etercat
+// 功能块
+fbAxis[3](AxisRef:=arAXIS[3] , stAxis:=arstAxis[3] , stSystem:=stSystem  , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[3]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_04_AZ1" Id="{7ed97073-e10c-412c-8e19-3afcee87b229}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[4].wstrName:=" 喷涂Z1轴" ;
+arstAxis[4].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[4].Parameter.uiSlaveAddr:=1015;通过drive-infoData-AMSNETID-PORT关联;
+arstAxis[4].State.bNSw:= X000009 ;// NC-White
+arstAxis[4].State.bPSw:= X000008 ;//
+//false=etercat
+// 功能块
+fbAxis[4](AxisRef:=arAXIS[4] , stAxis:=arstAxis[4] , stSystem:=stSystem  , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[4]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_05_AZ2" Id="{a3ad2120-800f-4be9-b0d5-25835e39eae6}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[5].wstrName:=" 喷涂Z2轴" ;
+arstAxis[5].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[5].Parameter.uiSlaveAddr:=1016;通过drive-infoData-AMSNETID-PORT关联;
+arstAxis[5].State.bNSw:= X000011 ;// NC-White
+arstAxis[5].State.bPSw:= X000010 ;//
+//false=etercat
+// 功能块
+fbAxis[5](AxisRef:=arAXIS[5] , stAxis:=arstAxis[5] , stSystem:=stSystem , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[5]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_06_APin" Id="{21251d23-acba-466a-ae45-38d83c30d83e}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[6].wstrName:=" 顶pin轴" ;
+arstAxis[6].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[6].Parameter.uiSlaveAddr:=1017;
+arstAxis[6].State.bNSw:= TRUE ;// NC-White
+arstAxis[6].State.bPSw:= TRUE;//
+//false=etercat
+// 功能块
+fbAxis[6](AxisRef:=arAXIS[6] , stAxis:=arstAxis[6] , stSystem:=stSystem  , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[6]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_07_R1" Id="{c5033890-7e2d-49f7-bfa7-66a6b94544b3}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[7].wstrName:=" R1轴" ;
+arstAxis[7].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[7].Parameter.uiSlaveAddr:=1017;
+arstAxis[7].State.bNSw:=X001002 (*X001001 *);// NC-White
+arstAxis[7].State.bPSw:=X001001 (* X001002;*);//
+//false=etercat
+// 功能块
+fbAxis[7](AxisRef:=arAXIS[7] , stAxis:=arstAxis[7] , stSystem:=stSystem , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[7]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_08_R2" Id="{4cc5b5d8-e7ca-4a9c-b2e3-87feaf8bcfd1}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[8].wstrName:=" R2轴" ;
+arstAxis[8].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[8].Parameter.uiSlaveAddr:=1017;
+arstAxis[8].State.bNSw:= X001004(*X001003 *);// NC-White
+arstAxis[8].State.bPSw:= X001003 (*X001004*);//
+//false=etercat
+// 功能块
+fbAxis[8](AxisRef:=arAXIS[8] , stAxis:=arstAxis[8] , stSystem:=stSystem  , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[8]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_09_R3" Id="{a7e334c6-3e16-40aa-8a05-3b9d1deddbdc}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[9].wstrName:=" R3轴" ;
+arstAxis[9].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[9].Parameter.uiSlaveAddr:=1017;
+arstAxis[9].State.bNSw:= X001006(*X001005*) ;// NC-White
+arstAxis[9].State.bPSw:= X001005(*X001006*);//
+//false=etercat
+// 功能块
+fbAxis[9](AxisRef:=arAXIS[9] , stAxis:=arstAxis[9] , stSystem:=stSystem , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[9]);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="A_10_Bump" Id="{505f0493-74ee-4dde-8574-5c57a3015982}">
+      <Implementation>
+        <ST><![CDATA[//Axis-BasicParameterSettings
+//限位默认常闭，常开需要取反,白色常闭/黑色常开
+arstAxis[10].wstrName:=" Bump" ;
+arstAxis[10].strNetID:=stSystem.strNetID;//'192.168.1.50.2.1';
+//arstAxis[6].Parameter.uiSlaveAddr:=1017;
+arstAxis[10].State.bNSw:= X001007 ;// NC-White
+arstAxis[10].State.bPSw:= X001008;//
+//false=etercat
+// 功能块
+fbAxis[10](AxisRef:=arAXIS[10] , stAxis:=arstAxis[10] , stSystem:=stSystem  , stHomeCoe:=arstHomeCoE[1],stHomeADS:=arstHomeADS[10]);]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="AxisLink">
+      <LineId Id="151" Count="32" />
+      <LineId Id="482" Count="0" />
+      <LineId Id="184" Count="65" />
+      <LineId Id="303" Count="16" />
+      <LineId Id="302" Count="0" />
+      <LineId Id="337" Count="0" />
+      <LineId Id="321" Count="15" />
+      <LineId Id="320" Count="0" />
+      <LineId Id="339" Count="16" />
+      <LineId Id="338" Count="0" />
+      <LineId Id="374" Count="0" />
+      <LineId Id="358" Count="15" />
+      <LineId Id="357" Count="0" />
+      <LineId Id="459" Count="0" />
+      <LineId Id="483" Count="0" />
+      <LineId Id="375" Count="0" />
+      <LineId Id="392" Count="15" />
+      <LineId Id="356" Count="0" />
+      <LineId Id="409" Count="0" />
+      <LineId Id="460" Count="0" />
+      <LineId Id="410" Count="17" />
+      <LineId Id="461" Count="0" />
+      <LineId Id="428" Count="16" />
+      <LineId Id="408" Count="0" />
+      <LineId Id="250" Count="6" />
+      <LineId Id="289" Count="4" />
+      <LineId Id="257" Count="0" />
+      <LineId Id="478" Count="0" />
+      <LineId Id="295" Count="1" />
+      <LineId Id="479" Count="0" />
+      <LineId Id="297" Count="1" />
+      <LineId Id="480" Count="0" />
+      <LineId Id="299" Count="0" />
+      <LineId Id="294" Count="0" />
+      <LineId Id="481" Count="0" />
+      <LineId Id="301" Count="0" />
+      <LineId Id="300" Count="0" />
+      <LineId Id="470" Count="0" />
+      <LineId Id="258" Count="5" />
+      <LineId Id="445" Count="6" />
+      <LineId Id="264" Count="24" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_01_AX">
+      <LineId Id="2" Count="0" />
+      <LineId Id="30" Count="3" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="35" Count="9" />
+      <LineId Id="29" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_02_AY">
+      <LineId Id="2" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="3" Count="5" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_03_AR">
+      <LineId Id="2" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="3" Count="3" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="7" Count="1" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_04_AZ1">
+      <LineId Id="2" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="3" Count="5" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_05_AZ2">
+      <LineId Id="2" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="3" Count="5" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_06_APin">
+      <LineId Id="2" Count="7" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_07_R1">
+      <LineId Id="2" Count="7" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_08_R2">
+      <LineId Id="2" Count="7" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_09_R3">
+      <LineId Id="2" Count="7" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="AxisLink.A_10_Bump">
+      <LineId Id="2" Count="7" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

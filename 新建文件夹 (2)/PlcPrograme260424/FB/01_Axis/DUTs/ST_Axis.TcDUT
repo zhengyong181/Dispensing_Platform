@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Axis" Id="{5caed6f4-603b-4f42-8951-9670a80a1dc7}">
+    <Declaration><![CDATA[TYPE ST_Axis :
+STRUCT
+	strName			:STRING					    ;
+	wstrName		:WSTRING				    ;
+	strNetID        :STRING;
+	uiSlaveAddr     AT%I*  :WORD;
+	Control			:ST_AxisControl				;		
+	Parameter		:ST_AxisParameter			;		
+	State			:ST_AxisState				;	
+	Pos				:ST_AxisPos		            ;
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

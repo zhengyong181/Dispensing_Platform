@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AxisPos" Id="{76b11240-ec53-4437-97f1-2cb122f3c4b4}">
+    <Declaration><![CDATA[TYPE ST_AxisPos :
+STRUCT
+	Ctrl			:			ST_AxisPosControl	;
+	Par				:			ST_AxisPosPar		;
+	State			:			ST_AxisPosState		;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

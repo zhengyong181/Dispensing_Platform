@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_DAC" Id="{03604c94-db96-415c-91fa-b99bc2d14561}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DAC
+
+VAR
+	rAnaOut         :REAL;
+	bFirstRun: BOOL := TRUE;
+END_VAR
+VAR_INPUT
+	rDigitalIn			:			REAL	;		//数字量输入     例上位机
+	rAnalogLowLMT		:			REAL	;		//模拟量下限     0
+	rAanlogUpperLMT		:			REAL	;		//模拟量上限     32767
+	rAnalogRef1			:			REAL	;		//参考点1：模拟量
+	rDigitalRef1		:			REAL	;		//参考点1：数字量
+	rAnalogRef2			:			REAL	;		//参考点2：模拟量
+	rDigitalRef2		:			REAL	;		//参考点2：数字量
+END_VAR
+VAR_OUTPUT
+	rAnalogOut			:			INT	    ;		//模拟量输出
+	bError				:			BOOL	;		//错误
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bFirstRun THEN
+	IF ABS(rAnalogLowLMT) < 0.01 THEN
+		rAanlogUpperLMT := -50000.0;
+	END_IF;
+	IF ABS(rAanlogUpperLMT) < 0.01 THEN
+		rAanlogUpperLMT := 50000.0;
+	END_IF;
+END_IF;
+bFirstRun:=FALSE;
+IF rDigitalIn<>0 THEN
+IF ABS(rAnalogRef2 - rAnalogRef1) > 0.00001 AND ABS(rDigitalRef2 - rDigitalRef1) >0.00001 THEN
+	rAnaOut:=(rDigitalIn - rDigitalRef1) * (rAnalogRef2 - rAnalogRef1)/(rDigitalRef2 -rDigitalRef1) +rAnalogRef1;
+	rAnaOut:=LIMIT(rAnalogLowLMT,rAnaOut,rAanlogUpperLMT);
+	rAnalogOut:=REAL_TO_INT(rAnaOut);
+	bError:=FALSE;
+ELSE
+	rAnalogOut := 0;
+	bError     := TRUE;
+END_IF;	
+ELSE
+rAnalogOut := 0;
+END_IF;]]></ST>
+    </Implementation>
+    <LineIds Name="FB_DAC">
+      <LineId Id="91" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="34" Count="2" />
+      <LineId Id="38" Count="1" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="114" Count="0" />
+      <LineId Id="46" Count="2" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="156" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

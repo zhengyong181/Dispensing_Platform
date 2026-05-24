@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_09_SetOverridePercent" Id="{a5f0b5d6-267b-4859-859f-f9845fd1058b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_09_SetOverridePercent
+VAR_INPUT
+	OverridePercent:LREAL:=100;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+	stItpToPlc :NCTOPLC_NCICHANNEL_REF;
+	stPlcToItp:PLCTONC_NCICHANNEL_REF;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[ItpSetOverridePercent(fOverridePercent:= OverridePercent, sPlcToNci:= stPlcToItp);]]></ST>
+    </Implementation>
+    <LineIds Name="FB_09_SetOverridePercent">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

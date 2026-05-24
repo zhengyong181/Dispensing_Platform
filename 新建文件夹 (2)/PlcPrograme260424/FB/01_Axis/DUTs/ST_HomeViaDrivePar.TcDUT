@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_HomeViaDrivePar" Id="{6937a7fe-5f28-4e08-813a-8ec8c0717af7}">
+    <Declaration><![CDATA[TYPE ST_HomeViaDrivePar :
+STRUCT
+	//必须设定的参数
+//	nCtrl1					AT%I*			:				USINT					;				// 驱动器回零模式下配置 : NC输出的控制字1，传递给PLC 
+//	nCtrl2					AT%I*			:				USINT					;				// 驱动器回零模式下配置 : NC输出的控制字1，传递给PLC 
+//	ControlWord				AT%Q*			:				UINT					;				// 驱动器回零模式下配置 : PLC输出控制字，传递给驱动器的控制字 
+	ModeOfOperation			AT%Q*			:				SINT					;				// 驱动器回零模式下配置 : PLC输出驱动器工作模式，传递给驱动器的工作模式		
+	//根据驱动器的实际需求进行设置
+	siHomeMethod							:				SINT					;				// 设置通过驱动器回零的方式
+	udiHomeVelHigh							:				UDINT					;				// 设置通过驱动器回零的高速回零速度
+	udiHomeVelLow							:				UDINT					;				// 设置通过驱动器回零的低速回零速度
+	udiHomeAcc								:				UDINT					;				// 设置通过驱动器回零的加减速度
+	diHomeOffset							:				DINT					;				// 设置通过驱动器回零的回零偏置
+	rHomeVelHigh							:				LREAL					;				// 设置通过探针回零的高速回零速度
+	rHomeVelLow							    :				LREAL					;				// 设置通过探针回零的低速回零速度
+	rHomeOffset							    :				LREAL					;				// 设置通过探针回零的回零偏置
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -9,6 +9,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shell", "Shell", "{130E23E2
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DispensingPlatform.Shell", "src\Shell\DispensingPlatform.Shell\DispensingPlatform.Shell.csproj", "{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Hal", "Hal", "{4F2D3C0D-51BE-4A19-83D4-1AF0A393F8C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DispensingPlatform.Hal.Beckhoff", "src\Hal\DispensingPlatform.Hal.Beckhoff\DispensingPlatform.Hal.Beckhoff.csproj", "{B244D1DE-221C-4FDE-94EE-1D92B59E0A44}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6E60790D-1547-44F3-9658-870BC8CD8422}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DispensingPlatform.Hal.Tests", "tests\DispensingPlatform.Hal.Tests\DispensingPlatform.Hal.Tests.csproj", "{2BE69E92-6F33-4095-A4B1-7D0FE507497B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,9 +30,20 @@ Global
 		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B244D1DE-221C-4FDE-94EE-1D92B59E0A44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B244D1DE-221C-4FDE-94EE-1D92B59E0A44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B244D1DE-221C-4FDE-94EE-1D92B59E0A44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B244D1DE-221C-4FDE-94EE-1D92B59E0A44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BE69E92-6F33-4095-A4B1-7D0FE507497B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BE69E92-6F33-4095-A4B1-7D0FE507497B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BE69E92-6F33-4095-A4B1-7D0FE507497B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BE69E92-6F33-4095-A4B1-7D0FE507497B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{130E23E2-40DD-4F25-AA13-E63400CF3DF9} = {63C5A902-75A0-43CD-98CB-30CC5463BB8F}
 		{7BF1189F-3F04-4E56-BB0F-264F70A2E0EC} = {130E23E2-40DD-4F25-AA13-E63400CF3DF9}
+		{4F2D3C0D-51BE-4A19-83D4-1AF0A393F8C5} = {63C5A902-75A0-43CD-98CB-30CC5463BB8F}
+		{B244D1DE-221C-4FDE-94EE-1D92B59E0A44} = {4F2D3C0D-51BE-4A19-83D4-1AF0A393F8C5}
+		{2BE69E92-6F33-4095-A4B1-7D0FE507497B} = {6E60790D-1547-44F3-9658-870BC8CD8422}
 	EndGlobalSection
 EndGlobal

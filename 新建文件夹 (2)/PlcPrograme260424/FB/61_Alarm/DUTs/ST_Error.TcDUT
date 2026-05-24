@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Error" Id="{5516a765-92c4-478b-8cf4-9719eeeecaa5}">
+    <Declaration><![CDATA[TYPE ST_Error :
+STRUCT
+    (*InPut*)
+	iErrorID					:					INT						;			//报警ID号
+    wstrErrorMessage			:					WSTRING					;			//报警信息
+    dtErrorOccorTime			:                   DT						;			//报警发生时间
+	bErrorExe					:					BOOL					;			//报警触发信号接入
+	bFilterOn					:					BOOL					;			//输入信号滤波功能
+	timeFilter					:                   TIME					;			//滤波时间设定
+	bResetSignalUse				:					BOOL					;			//启用复位信号复位.true=复位信号为1时且触发信号为0时，复位报警状态;  false=仅触发信号为0时复位报警信号
+	bResetExe					:					BOOL					;			//报警复位信号接入
+	enumErrorClass				:					Enum_ErrorClass			;			//报警等级
+
+	bAlarmAction1				:					BOOL					;			//报警后输出动作1
+	bAlarmAction2				:					BOOL					;			//报警后输出动作2
+	bAlarmAction3				:					BOOL					;			//报警后输出动作3
+	bAlarmAction4				:					BOOL					;			//报警后输出动作4
+
+   (*OutPut*)
+	bErrorOccur					:					BOOL					;			//报警正在发生
+	bEnabled					:                	BOOL					;			//当前报警已启用
+END_STRUCT
+END_TYPE;]]></Declaration>
+  </DUT>
+</TcPlcObject>

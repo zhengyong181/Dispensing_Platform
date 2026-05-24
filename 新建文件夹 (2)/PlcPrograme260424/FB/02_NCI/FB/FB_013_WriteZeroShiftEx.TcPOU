@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_013_WriteZeroShiftEx" Id="{d18c48d9-d18e-412f-b10f-ea11fcb1e6c2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_013_WriteZeroShiftEx
+VAR_INPUT
+	bExecute:BOOL;
+	nZsNo:UDINT;
+	tTimeOut:TIME;
+	lZeroShiftX             :LREAL                      ;           //X偏移值
+	lZeroShiftY             :LREAL                      ;           //Y偏移值
+	lZeroShiftZ             :LREAL                      ;           //Z偏移值	
+END_VAR
+VAR_OUTPUT
+	bBusy:BOOL;
+	bErr:BOOL;
+	nErrId:UDINT;
+END_VAR
+VAR_IN_OUT
+	stItpToPlc :NCTOPLC_NCICHANNEL_REF;
+END_VAR
+VAR
+stZerohiftDesc:ZeroShiftDesc;
+fbWriteZeroShiftEx:ItpWriteZeroShiftEx;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[fbWriteZeroShiftEx(bExecute:=bExecute,nZsNo:=nZsNo,tTimeOut:=tTimeOut,sNciToPlc:=stItpToPlc,sZeroShiftDesc:=stZerohiftDesc,bBusy=>bBusy,bErr=>bErr,nErrId=>nErrId);
+stZerohiftDesc.fShiftX:=lZeroShiftX;
+stZerohiftDesc.fShiftY:=lZeroShiftY;
+stZerohiftDesc.fShiftZ:=lZeroShiftZ;]]></ST>
+    </Implementation>
+    <LineIds Name="FB_013_WriteZeroShiftEx">
+      <LineId Id="9" Count="0" />
+      <LineId Id="39" Count="2" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

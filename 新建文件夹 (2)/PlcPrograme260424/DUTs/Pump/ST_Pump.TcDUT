@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Pump" Id="{ee75f039-a49e-472f-bf4f-7de2d7057eda}">
+    <Declaration><![CDATA[TYPE ST_Pump :
+STRUCT
+	rJogVel_A								:REAL				    ;			// 流速	
+	rJogVol_A								:REAL				    ;			// 容积
+	strml               :STRING:='5ml'               ;  //当前进样器容积
+	rInjectDia          :ARRAY[1..2] OF REAL  :=[ 7.3, 10.3]; //当前进样器内径
+	rVol_Process1   : REAL;  // 流程1：快速注入容量 (ul)
+    rVel_Process1   : REAL;  // 流程1：快速注入流速 (ul/min)
+    rVel_Process2   : REAL;  // 流程2：匀速注入流速 (ul/min)
+    rVol_Process3   : REAL;  // 流程3：快速抽取容量 (ul)
+    rVel_Process3   : REAL;  // 流程3：快速抽取流速 (ul/min)
+	iCurrentStep    : INT;    // 当前运行状态 (0:待机, 10:注入准备, 11:快速注入中..., 20:匀速注入中..., 30:抽取中..., 31:抽取中...)
+	bEX_PumpTrigOn  : BOOL;   //注射泵触发开
+	bEX_PumpTrigOff  : BOOL;   //注射泵触发关
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

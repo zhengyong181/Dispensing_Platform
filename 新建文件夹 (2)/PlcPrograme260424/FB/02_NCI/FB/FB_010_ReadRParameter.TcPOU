@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_010_ReadRParameter" Id="{cf7204ed-bfd9-446c-b4f0-645a278d579e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_010_ReadRParameter
+
+VAR_INPUT
+	Execute:BOOL;
+    fbnChannelid:UDINT;	
+END_VAR
+VAR_OUTPUT
+	nRParamAry:ARRAY[0..19] OF LREAL;
+END_VAR
+VAR
+	fbReadRParams:ItpReadRParams;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+	fbReadRParams(
+	bExecute:= Execute, 
+	nChnId:= fbnChannelid, 
+	pAddr:= ADR(nRParamAry), 
+	nIndex:= 0, 
+	nCount:= 20, 
+	tTimeOut:= T#2S, 
+	bBusy=> , 
+	bErr=> , 
+	nErrId=> );]]></ST>
+    </Implementation>
+    <LineIds Name="FB_010_ReadRParameter">
+      <LineId Id="50" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="51" Count="8" />
+      <LineId Id="40" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

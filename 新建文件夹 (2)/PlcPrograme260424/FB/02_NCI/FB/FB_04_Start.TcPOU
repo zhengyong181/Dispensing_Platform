@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_04_Start" Id="{e563e3e0-6ea4-44dd-90f0-9964064f3104}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_04_Start
+VAR_INPUT
+	bExecute:BOOL;
+	bExecute1:BOOL;
+END_VAR
+VAR_OUTPUT
+	bBusy:BOOL;(*功能块执行忙标志*)
+	bError:BOOL;(*出错*)
+	bDone:BOOL;(*执行完毕*)
+END_VAR
+VAR_IN_OUT
+//	stX:AXIS_REF;
+//	stY:AXIS_REF;
+//	stZ:AXIS_REF;
+	stItpToPlc :NCTOPLC_NCICHANNEL_REF;
+	stPlcToItp:PLCTONC_NCICHANNEL_REF;
+END_VAR
+VAR
+	StartStep:INT:=0;
+	fbStart:ItpStartStopEx;(*启动和停止*)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE StartStep OF
+	0:
+	  IF  bExecute OR bExecute1 THEN
+		 bBusy:=TRUE;(*FB执行状态*)
+		 bDone:=FALSE;(*FB执行完毕*)
+		 bError:=FALSE;(*报错*)
+		 StartStep:=10;(*进入10步*) 
+	  END_IF
+	10:
+	  fbStart(
+     	bStart:= bExecute, 
+	    bStop:= bExecute1, 
+	    tTimeOut:= , 
+	    sNciToPlc:= stItpToPlc, 
+	    bBusy=> , 
+	    bErr=> , 
+	    nErrId=> );
+	   IF NOT fbStart.bBusy THEN
+		  IF NOT fbStart.bErr THEN
+			StartStep:=20;(*进入20步*)  
+		  ELSE
+			bBusy:=FALSE;
+			bError:=TRUE;
+			StartStep:=999;
+		  END_IF
+		  fbStart(bStart:= FALSE,bStop:=FALSE,sNciToPlc:= stItpToPlc); 
+	    END_IF
+	 20:
+	   bDone:=TRUE;
+       bBusy:=FALSE;   
+	   IF NOT bExecute AND NOT bExecute1 THEN
+		 StartStep:=0;
+	   END_IF
+	 999:
+	   IF NOT bExecute AND NOT bExecute1 THEN		   
+	    StartStep:=0;
+        bError:=FALSE; 
+	   END_IF
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_04_Start">
+      <LineId Id="9" Count="0" />
+      <LineId Id="25" Count="7" />
+      <LineId Id="62" Count="6" />
+      <LineId Id="41" Count="8" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="50" Count="10" />
+      <LineId Id="23" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

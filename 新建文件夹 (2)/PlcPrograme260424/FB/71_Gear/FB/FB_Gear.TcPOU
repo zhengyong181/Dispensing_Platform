@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Gear" Id="{34eee4ab-e82e-41ce-bacf-9b80f0e79f97}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Gear
+VAR_IN_OUT
+	stGear:ST_Gear;
+	AxisRefMaster:AXIS_REF;
+	AxisRefSlave:AXIS_REF;
+	stSystem:ST_System;
+//	arrfbSetAlarm: ARRAY[1..3] OF FB_SetError;
+END_VAR
+VAR_INPUT
+	inChannelid:INT;
+END_VAR
+VAR
+	fbGearIn:MC_GearIn;
+	fbGearInDyn:MC_GearInDyn;
+	fbGearout:MC_GearOut;
+	fbGearoutTrig:R_TRIG;
+	arrfbSetAlarm: ARRAY[1..3] OF FB_SetError;
+	i:UINT;
+	statr: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[fbGearInDyn(
+	Master:= AxisRefMaster, 
+	Slave:= AxisRefSlave, 
+	Enable:= stGear.bGearIn(*arstGear[2].bGearIn*), 
+	GearRatio:=stGear.rRatioNumerator, 
+	Acceleration:= , 
+	Deceleration:= , 
+	Jerk:= , 
+	BufferMode:= , 
+	Options:= , 
+	InGear=> , 
+	Busy=> , 
+	Active=> , 
+	CommandAborted=> , 
+	Error=> stGear.bError, 
+	ErrorID=> );
+//fbGearIn(
+//	Master:= stGear.AxisRefMaster, 
+//	Slave:= stGear.AxisRefSlave, 
+//	Execute:= stGear.bGearIn, 
+//	RatioNumerator:= stGear.rRatioNumerator, 
+//	RatioDenominator:= stGear.uiRatioDenominator, 
+//	Acceleration:= , 
+//	Deceleration:=, 
+//	Jerk:= , 
+//	BufferMode:= , 
+//	Options:= , 
+//	InGear=> , 
+//	Busy=> , 
+//	Active=> , 
+//	CommandAborted=> , 
+//	Error=> stGear.bError, 
+//	ErrorID=> );
+stGear.bInSyncing:=AxisRefSlave.Status.Coupled;
+fbGearout(
+	Slave:=  AxisRefSlave(*stGear.AxisRefSlave*) , 
+	Execute:= stGear.bGearOut , 
+	Options:= , 
+	Done=> stGear.bnoInSyncing, 
+	Busy=> , 
+	Error=> stGear.bError, 
+	ErrorID=> );
+//fbGearoutTrig(CLK:=fbGearout.Done , Q=> );
+//	IF fbGearoutTrig.Q THEN
+//		stGear.bGearin:=FALSE;
+//	END_IF
+IF fbGearIn.Error THEN
+	stGear.bError:=TRUE;
+	stGear.arErrorID[1]:=TRUE;
+//ELSIF fbGearInPos.Error THEN
+	//stGear.arErrorID[2]:=TRUE;
+ELSIF fbGearout.Error THEN
+	stGear.bError:=TRUE;
+	stGear.arErrorID[2]:=TRUE;
+END_IF
+// 耦合报错
+arrfbSetAlarm[1](
+	bEnable:= TRUE, 
+	iErrorID:= 80+3*(inChannelid-1), 
+	bExecute:= stGear.arErrorID[1], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Gear_in Alm', 
+	wstrErrorInfoCN:="耦合错误" , 
+	enumErrorClass:= 6, 
+    );
+// 耦合报错
+arrfbSetAlarm[3](
+	bEnable:= TRUE, 
+	iErrorID:= 80+3*(inChannelid-1)+2, 
+	bExecute:= stGear.arErrorID[3], 
+	bReset:= stSystem.bReset, 
+	strErrorInfoEN:= 'Gear_in Alm', 
+	wstrErrorInfoCN:=" 解耦错误" , 
+	enumErrorClass:= 6, 
+    );
+IF stSystem.bReset THEN
+	stGear.bError:=FALSE;
+	FOR i:=1 TO 2 BY 1 DO 
+	   stGear.arErrorID[i]:=FALSE;
+    END_FOR
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="FB_Gear">
+      <LineId Id="185" Count="14" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="24" Count="15" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="183" Count="0" />
+      <LineId Id="67" Count="6" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="111" Count="2" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="219" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="133" Count="7" />
+      <LineId Id="132" Count="0" />
+      <LineId Id="159" Count="8" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="152" Count="4" />
+      <LineId Id="92" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
