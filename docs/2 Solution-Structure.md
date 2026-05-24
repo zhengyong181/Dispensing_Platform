@@ -30,7 +30,15 @@ DispensingPlatform.sln
 │   ├─ Hal/
 │   │   ├─ README.md
 │   │   └─ DispensingPlatform.Hal.Beckhoff/
-│   │       └─ DispensingPlatform.Hal.Beckhoff.csproj
+│   │       ├─ README.md
+│   │       ├─ DispensingPlatform.Hal.Beckhoff.csproj
+│   │       ├─ Axes/
+│   │       ├─ Connection/
+│   │       ├─ Dispense/
+│   │       ├─ Io/
+│   │       ├─ Machine/
+│   │       ├─ Nci/
+│   │       └─ PlcVariables/
 │   ├─ Drafting/
 │   │   └─ README.md
 │   ├─ Process/
@@ -46,6 +54,9 @@ DispensingPlatform.sln
 │       └─ DispensingPlatform.Hal.Tests.csproj
 │
 ├─ configs/
+│   ├─ README.md
+│   └─ beckhoff/
+│       └─ plc-symbol-map.yaml
 ├─ docs/
 ├─ samples/
 └─ tools/
@@ -55,6 +66,8 @@ DispensingPlatform.sln
 
 - 空目录用 `README.md` 占位，避免 Git 不跟踪。
 - 当前已创建 `Shell` 与 `Hal.Beckhoff` 两个项目：前者用于 UI 主壳，后者用于 Beckhoff 硬件抽象落地。
+- `Hal.Beckhoff` 当前按设备职责拆分为连接、PLC 变量映射、轴、整机状态、IO、NCI 和点胶触发目录，避免所有逻辑堆在单个源文件中。
+- `configs/beckhoff/plc-symbol-map.yaml` 是 Beckhoff PLC 变量清单；PLC 变量改名、移动、删除或新增时，应与 `Hal.Beckhoff/PlcVariables/` 同步维护。
 - 其它层不提前创建 `.csproj`，避免一开始出现大量空项目和错误边界。
 - 后续新增项目前，先更新本文，再创建项目骨架。
 

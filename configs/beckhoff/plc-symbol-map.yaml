@@ -1,0 +1,417 @@
+# Beckhoff PLC 变量清单
+# 维护说明：
+# 1. 本文件给现场调试和上位机开发共同使用，用来说明 HAL 当前依赖哪些 PLC 变量。
+# 2. PLC 变量改名、移动、删除或新增时，请同步修改本文件和 src/Hal/DispensingPlatform.Hal.Beckhoff/PlcVariables 下的变量映射代码。
+# 3. unit 表示上位机理解的工程单位；plcType 表示 PLC 侧变量类型；direction 表示 HAL 视角下的读写方向。
+
+metadata:
+  project: DispensingPlatform.Hal.Beckhoff
+  plcProject: PlcPrograme260424
+  sourceFolder: 新建文件夹 (2)
+  defaultAmsNetId: 192.168.1.50.1.1
+  defaultAmsPort: 851
+  lastUpdated: 2026-05-25
+
+axes:
+  axisCatalog:
+    - axisNo: 1
+      axisId: Axis1
+      name: 喷涂X轴
+      kind: 直线轴
+    - axisNo: 2
+      axisId: Axis2
+      name: 喷涂Y轴
+      kind: 直线轴
+    - axisNo: 3
+      axisId: Axis3
+      name: 喷涂R轴
+      kind: 旋转轴
+    - axisNo: 4
+      axisId: Axis4
+      name: 喷涂Z1轴
+      kind: 直线轴
+    - axisNo: 5
+      axisId: Axis5
+      name: 喷涂Z2轴
+      kind: 直线轴
+    - axisNo: 6
+      axisId: Axis6
+      name: 顶pin轴
+      kind: 直线轴
+    - axisNo: 7
+      axisId: Axis7
+      name: R1轴
+      kind: 直线轴
+    - axisNo: 8
+      axisId: Axis8
+      name: R2轴
+      kind: 直线轴
+    - axisNo: 9
+      axisId: Axis9
+      name: R3轴
+      kind: 直线轴
+    - axisNo: 10
+      axisId: Axis10
+      name: 顶升轴
+      kind: 直线轴
+
+  commonSymbols:
+    - key: axis.control.powerOn
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Control.bPowerOn
+      plcType: BOOL
+      direction: 写入
+      comment: 轴伺服使能命令
+    - key: axis.control.homeAuto
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Control.bHome_A
+      plcType: BOOL
+      direction: 脉冲写入
+      comment: 自动回零触发位
+    - key: axis.control.stopAuto
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Control.bStop_A
+      plcType: BOOL
+      direction: 脉冲写入
+      comment: 自动停止触发位
+    - key: axis.control.resetAuto
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Control.bReset_A
+      plcType: BOOL
+      direction: 脉冲写入
+      comment: 自动复位触发位
+    - key: axis.position.relativeEnable
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Par.bRelEnable
+      plcType: BOOL
+      direction: 写入
+      comment: false 表示绝对定位，true 表示相对定位
+    - key: axis.position.target
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Par.rPos
+      plcType: REAL
+      unit: 直线轴=mm，旋转轴=deg
+      direction: 写入
+      comment: 定位目标位置
+    - key: axis.position.velocity
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Par.rVel
+      plcType: REAL
+      unit: 直线轴=mm/s，旋转轴=deg/s
+      direction: 写入
+      comment: 定位速度
+    - key: axis.position.acceleration
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Par.rAcc
+      plcType: REAL
+      unit: 直线轴=mm/s^2，旋转轴=deg/s^2
+      direction: 写入
+      comment: 定位加速度
+    - key: axis.position.deceleration
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Par.rDec
+      plcType: REAL
+      unit: 直线轴=mm/s^2，旋转轴=deg/s^2
+      direction: 写入
+      comment: 定位减速度
+    - key: axis.position.jerk
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Par.rJerk
+      plcType: REAL
+      unit: 直线轴=mm/s^3，旋转轴=deg/s^3
+      direction: 写入
+      comment: 定位跃度
+    - key: axis.position.goCondition
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Ctrl.bGo_Con
+      plcType: BOOL
+      direction: 写入
+      comment: 定位条件位
+    - key: axis.position.goAuto
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].Pos.Ctrl.bGo_A
+      plcType: BOOL
+      direction: 脉冲写入
+      comment: 自动定位启动触发位
+    - key: axis.state.powerOk
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.bPowerOK
+      plcType: BOOL
+      direction: 读取
+      comment: 轴使能完成
+    - key: axis.state.homeOk
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.bHome_OK
+      plcType: BOOL
+      direction: 读取
+      comment: 轴回零完成
+    - key: axis.state.moving
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.bMoving
+      plcType: BOOL
+      direction: 读取
+      comment: 轴正在移动
+    - key: axis.state.hasJob
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.bHasJob
+      plcType: BOOL
+      direction: 读取
+      comment: 轴存在运动任务
+    - key: axis.state.error
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.bError
+      plcType: BOOL
+      direction: 读取
+      comment: 轴错误标志
+    - key: axis.state.warning
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.bWarning
+      plcType: BOOL
+      direction: 读取
+      comment: 轴警告标志
+    - key: axis.state.ncErrorId
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.udiNCErrorID
+      plcType: UDINT
+      direction: 读取
+      comment: NC 错误码
+    - key: axis.state.driveErrorCode
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.uiDriveErrorCode
+      plcType: UINT
+      direction: 读取
+      comment: 驱动器报警代码
+    - key: axis.state.linearActualPosition
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.rActPos
+      plcType: REAL
+      unit: mm
+      direction: 读取
+      comment: 直线轴实际位置
+    - key: axis.state.rotaryActualPosition
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.rActModuloPos
+      plcType: REAL
+      unit: deg
+      direction: 读取
+      comment: 旋转轴实际模位置，仅 3 轴使用
+    - key: axis.state.actualVelocity
+      symbolTemplate: Com_GVLS.arstAxis[{axisNo}].State.rActVel
+      plcType: REAL
+      unit: 直线轴=mm/s，旋转轴=deg/s
+      direction: 读取
+      comment: 轴实际速度
+
+system:
+  symbols:
+    - key: system.manual
+      symbol: Com_GVLS.stSystem.bManual
+      plcType: BOOL
+      direction: 读取
+      comment: 手自动模式标志
+    - key: system.reset
+      symbol: Com_GVLS.stSystem.bReset
+      plcType: BOOL
+      direction: 读取
+      comment: 整机复位请求
+    - key: system.stop
+      symbol: Com_GVLS.stSystem.bStop
+      plcType: BOOL
+      direction: 读取
+      comment: 整机停止请求
+    - key: system.emergencyStop
+      symbol: Com_GVLS.stSystem.bEMG
+      plcType: BOOL
+      direction: 读取
+      comment: 急停状态
+    - key: system.safetyDoor
+      symbol: Com_GVLS.stSystem.bSafetyDoor
+      plcType: BOOL
+      direction: 读取
+      comment: 安全门状态
+    - key: system.axesPowerOk
+      symbol: Com_GVLS.stSystem.bAxesPowerOK
+      plcType: BOOL
+      direction: 读取
+      comment: 所有轴使能完成
+    - key: system.axesHomeOk
+      symbol: Com_GVLS.stSystem.bAxesHomeOK
+      plcType: BOOL
+      direction: 读取
+      comment: 所有轴回零完成
+    - key: system.error
+      symbol: Com_GVLS.stSystem.bError
+      plcType: BOOL
+      direction: 读取
+      comment: 整机错误状态
+    - key: system.warning
+      symbol: Com_GVLS.stSystem.bWarning
+      plcType: BOOL
+      direction: 读取
+      comment: 整机警告状态
+
+nci:
+  symbols:
+    - key: nci.buildGroup
+      symbol: Com_GVLS.stIJP.bBuildGroupExe
+      plcType: BOOL
+      direction: 写入
+      comment: 构建 NCI 轴组
+    - key: nci.clearGroup
+      symbol: Com_GVLS.stIJP.bClearGroupExe
+      plcType: BOOL
+      direction: 写入
+      comment: 清理 NCI 轴组
+    - key: nci.loadProgram
+      symbol: Com_GVLS.stIJP.bLoadPGMExe
+      plcType: BOOL
+      direction: 写入
+      comment: 装载 G 代码程序
+    - key: nci.start
+      symbol: Com_GVLS.stIJP.bStartExe
+      plcType: BOOL
+      direction: 写入
+      comment: 启动 NCI 程序
+    - key: nci.stop
+      symbol: Com_GVLS.stIJP.bStopExe
+      plcType: BOOL
+      direction: 写入
+      comment: 停止 NCI 程序
+    - key: nci.emergencyStop
+      symbol: Com_GVLS.stIJP.bEstopExe
+      plcType: BOOL
+      direction: 写入
+      comment: NCI 紧急停止
+    - key: nci.afterEmergencyStop
+      symbol: Com_GVLS.stIJP.bAfterEstopExe
+      plcType: BOOL
+      direction: 写入
+      comment: 紧急停止后恢复
+    - key: nci.reset
+      symbol: Com_GVLS.stIJP.bResetExe
+      plcType: BOOL
+      direction: 写入
+      comment: NCI 错误复位
+
+dispense:
+  symbols:
+    - key: dispense.valveTrigger
+      symbol: Com_GVLS.stIJP.bEx_Trig
+      plcType: BOOL
+      direction: 写入
+      comment: 阀触发输出
+    - key: dispense.highVoltageTrigger
+      symbol: Com_GVLS.stIJP.bEx_TrigH
+      plcType: BOOL
+      direction: 写入
+      comment: 高压触发输出
+
+digitalIo:
+  inputs:
+    - symbol: GVL_IO.X000001
+      plcType: BOOL
+      direction: 读取
+      comment: 急停
+    - symbol: GVL_IO.X000002
+      plcType: BOOL
+      direction: 读取
+      comment: X- 限位
+    - symbol: GVL_IO.X000003
+      plcType: BOOL
+      direction: 读取
+      comment: X+ 限位
+    - symbol: GVL_IO.X000004
+      plcType: BOOL
+      direction: 读取
+      comment: Y- 限位
+    - symbol: GVL_IO.X000005
+      plcType: BOOL
+      direction: 读取
+      comment: Y+ 限位
+    - symbol: GVL_IO.X001001
+      plcType: BOOL
+      direction: 读取
+      comment: R1+ 限位
+    - symbol: GVL_IO.X001002
+      plcType: BOOL
+      direction: 读取
+      comment: R1- 限位
+    - symbol: GVL_IO.X001003
+      plcType: BOOL
+      direction: 读取
+      comment: R2+ 限位
+    - symbol: GVL_IO.X001004
+      plcType: BOOL
+      direction: 读取
+      comment: R2- 限位
+    - symbol: GVL_IO.X001005
+      plcType: BOOL
+      direction: 读取
+      comment: R3+ 限位
+    - symbol: GVL_IO.X001006
+      plcType: BOOL
+      direction: 读取
+      comment: R3- 限位
+    - symbol: GVL_IO.X001007
+      plcType: BOOL
+      direction: 读取
+      comment: Bump+ 限位
+    - symbol: GVL_IO.X001008
+      plcType: BOOL
+      direction: 读取
+      comment: Bump- 限位
+  outputs:
+    - symbol: GVL_IO.Y000001
+      plcType: BOOL
+      direction: 写入
+      comment: 针头正负压切换阀
+    - symbol: GVL_IO.Y000004
+      plcType: BOOL
+      direction: 写入
+      comment: 气缸开
+    - symbol: GVL_IO.Y000005
+      plcType: BOOL
+      direction: 写入
+      comment: 气缸关
+    - symbol: GVL_IO.Y000006
+      plcType: BOOL
+      direction: 写入
+      comment: 真空破 1
+    - symbol: GVL_IO.Y000007
+      plcType: BOOL
+      direction: 写入
+      comment: 真空吸 1
+    - symbol: GVL_IO.Y000008
+      plcType: BOOL
+      direction: 写入
+      comment: 真空破 2
+    - symbol: GVL_IO.Y000009
+      plcType: BOOL
+      direction: 写入
+      comment: 真空吸 2
+    - symbol: GVL_IO.Y000010
+      plcType: BOOL
+      direction: 写入
+      comment: 真空吸 3
+    - symbol: GVL_IO.Y000011
+      plcType: BOOL
+      direction: 写入
+      comment: 真空破 3
+    - symbol: GVL_IO.Y000016
+      plcType: BOOL
+      direction: 写入
+      comment: 高压输出
+
+analogIo:
+  inputs:
+    - symbol: Com_GVLS.stAIO.rAI1
+      plcType: REAL
+      direction: 读取
+      comment: 底部负压表显示
+    - symbol: Com_GVLS.stAIO.rAI2
+      plcType: REAL
+      direction: 读取
+      comment: 针头气压表显示
+    - symbol: Com_GVLS.stAIO.rAI5
+      plcType: REAL
+      direction: 读取
+      comment: 底部负压比例阀反馈
+    - symbol: Com_GVLS.stAIO.rAI6
+      plcType: REAL
+      direction: 读取
+      comment: 针头负压比例阀反馈
+    - symbol: Com_GVLS.stAIO.rAI7
+      plcType: REAL
+      direction: 读取
+      comment: 针头正压比例阀反馈
+  outputs:
+    - symbol: Com_GVLS.stAIO.rAO1
+      plcType: REAL
+      direction: 写入
+      comment: 底部负压比例阀设定
+    - symbol: Com_GVLS.stAIO.rAO2
+      plcType: REAL
+      direction: 写入
+      comment: 针头负压比例阀设定
+    - symbol: Com_GVLS.stAIO.rAO3
+      plcType: REAL
+      direction: 写入
+      comment: 针头正压比例阀设定

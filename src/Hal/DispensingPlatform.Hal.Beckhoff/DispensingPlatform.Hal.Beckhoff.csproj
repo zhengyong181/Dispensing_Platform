@@ -9,4 +9,8 @@
     <PackageReference Include="Beckhoff.TwinCAT.Ads" />
     <PackageReference Include="UnitsNet" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DispensingPlatform.Hal.Contracts\DispensingPlatform.Hal.Contracts.csproj" />
+  </ItemGroup>
 </Project>

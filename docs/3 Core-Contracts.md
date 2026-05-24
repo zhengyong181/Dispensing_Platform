@@ -144,6 +144,8 @@ public sealed record MotionParameters(
 - 轴类型约束：仅 `Axis3` 为旋转轴；`Axis1/2/4/5/6/7/8/9/10` 全部按直线轴建模。
 - 单位约束：直线轴使用 `Length/Speed/Acceleration/Jerk`，旋转轴使用 `Angle/RotationalSpeed/RotationalAcceleration`。
 - PLC 符号映射基线：`Com_GVLS.arstAxis[*]`（运动轴）、`Com_GVLS.stSystem`（系统状态）、`Com_GVLS.stIJP`（NCI/点胶触发）、`Com_GVLS.stAIO`（模拟量）、`GVL_IO`（数字 IO）。
+- PLC 变量清单：`configs/beckhoff/plc-symbol-map.yaml` 是现场调试、PLC 维护和 HAL 开发共同使用的变量索引；任何符号变动都必须同步该清单和 `src/Hal/DispensingPlatform.Hal.Beckhoff/PlcVariables/`。
+- 实现拆分约束：`Connection` 只隔离 ADS 连接和 SDK，`PlcVariables` 只维护符号路径，`Axes` / `Machine` / `Io` / `Nci` / `Dispense` 只承载各自设备职责，`BeckhoffHal.cs` 只作为总入口转发调用。
 
 ### 2.2 IMotionGroup（多轴协调）
 
